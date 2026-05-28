@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Road to 26.2 — Marathon Journal</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#0a0f1a;color:#e2e8f0;font-family:Georgia,'Times New Roman',serif;min-height:100vh;padding-bottom:60px}
+  button{font-family:Georgia,'Times New Roman',serif;cursor:pointer}
+  textarea,input{font-family:Georgia,'Times New Roman',serif}
+  input[type=date]::-webkit-calendar-picker-indicator{filter:invert(0.5)}
+  ::-webkit-scrollbar{height:4px;width:4px}
+  ::-webkit-scrollbar-track{background:#0f172a}
+  ::-webkit-scrollbar-thumb{background:#334155;border-radius:2px}
+  .tab-bar{display:flex;overflow-x:auto;gap:0;-webkit-overflow-scrolling:touch}
+  .tab-bar::-webkit-scrollbar{display:none}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+// ── DATA ─────────────────────────────────────────────────────────
+const PHASES=[
+  {id:1,name:"Foundation",weeks:"Weeks 1–8",dates:"May 25 – Jul 19",color:"#4ade80",goal:"Build aerobic base, establish routine, lose first 10 lbs",weeklyMiles:"12–15 mi/wk"},
+  {id:2,name:"Build",weeks:"Weeks 9–20",dates:"Jul 20 – Oct 11",color:"#facc15",goal:"Increase mileage, improve pace to ~11:30/mi, hit 175–180 lbs",weeklyMiles:"20–30 mi/wk"},
+  {id:3,name:"Peak",weeks:"Weeks 21–40",dates:"Oct 12 – Feb 28",color:"#f97316",goal:"Long runs 18–20mi, break 10:00/mi, lean muscle phase",weeklyMiles:"35–45 mi/wk"},
+  {id:4,name:"Taper",weeks:"Weeks 41–47",dates:"Mar 1 – Apr 12",color:"#60a5fa",goal:"Race-ready. Reduce volume, sharpen speed, rest & recover",weeklyMiles:"20–10 mi/wk"},
+];
+const WEEKLY_TEMPLATE=[
+  {day:"Monday",type:"REST / ACTIVE RECOVERY",emoji:"🧘",color:"#475569",tasks:["10 min morning stretch / mobility","Foam roll quads, IT band, calves","Hydrate with electrolytes all day","Prep run gear for tomorrow"]},
+  {day:"Tuesday",type:"RUN – Easy Pace",emoji:"🏃",color:"#16a34a",tasks:["Pre-run snack 30–45 min before (banana or toast + PB)","Electrolyte drink before & after","Easy conversational pace (Phase 1: 2–3mi | Phase 2: 3–5mi | Phase 3: 5–7mi)","Log distance, pace & how you felt","Post-run: 15 min stretch"]},
+  {day:"Wednesday",type:"CALISTHENICS – Upper Body",emoji:"💪",color:"#7c3aed",tasks:["Warm-up: 5 min jumping jacks + arm circles","Push-ups: 3 sets (start w/ max reps, build to 3×20)","Pike push-ups: 3×10","Diamond push-ups: 3×8","Doorframe rows / inverted rows: 3×10","Plank hold: 3×45 sec (build to 3×2 min)","Pull-up negatives or assisted: 3×5 (build to 3×10 full)","Cool-down stretch: 10 min"]},
+  {day:"Thursday",type:"RUN – Intervals / Tempo",emoji:"⚡",color:"#dc2626",tasks:["Pre-run snack + electrolytes","Warm-up: 5 min easy jog","Phase 1: 6×400m w/ 90s rest | Phase 2: Mile repeats | Phase 3: Tempo runs","Cool-down: 5 min easy jog","Log splits & perceived effort","Post-run nutrition within 30 min"]},
+  {day:"Friday",type:"CALISTHENICS – Core & Lower",emoji:"🔥",color:"#ea580c",tasks:["Warm-up: 5 min light cardio","Bodyweight squats: 3×20","Reverse lunges: 3×12 each leg","Glute bridges: 3×20","Dead bugs: 3×10 each side","Bicycle crunches: 3×20","Mountain climbers: 3×30 sec","Superman holds: 3×10","Cool-down & stretch: 10 min"]},
+  {day:"Saturday",type:"LONG RUN",emoji:"🗺️",color:"#0284c7",tasks:["Full meal 2 hrs before OR snack 45 min before","Carry electrolytes / water","Phase 1: 4–5mi easy | Phase 2: 8–12mi | Phase 3: 14–20mi","Run/walk intervals allowed (run 9 min, walk 1 min)","Log total distance, time, avg pace","Recovery meal within 45 min (carbs + protein)","Ice legs or elevate for 20 min after"]},
+  {day:"Sunday",type:"ACTIVE RECOVERY / BONUS",emoji:"🌿",color:"#0891b2",tasks:["Optional: 20–30 min easy walk or light bike","Full body stretch: 20 min","Meal prep for the week","Review last week's logs & plan ahead","Sleep 7–9 hrs — recovery is training"]},
+];
+const DEFAULT_MILESTONES=[
+  {week:4,goal:"Run 5K without stopping, sub-37 min",done:false},
+  {week:8,goal:"Run 4 miles continuous, 175–180 lbs target start",done:false},
+  {week:12,goal:"Run 6 miles, pace under 12:30/mi",done:false},
+  {week:16,goal:"Run 8 miles, pace under 12:00/mi",done:false},
+  {week:20,goal:"Half marathon distance (13.1 mi)",done:false},
+  {week:24,goal:"Pace under 11:00/mi on easy runs",done:false},
+  {week:28,goal:"18 mile long run",done:false},
+  {week:32,goal:"Pace under 10:30/mi consistently",done:false},
+  {week:36,goal:"20 mile long run — marathon ready",done:false},
+  {week:40,goal:"Pace under 10:00/mi — GOAL ACHIEVED",done:false},
+  {week:46,goal:"MARATHON RACE DAY 🏅",done:false},
+];
+const NUTRITION_TIPS=["Pre-run: banana, toast + PB, or oatmeal 30–60 min before every run","Electrolytes BEFORE and AFTER every run — not just water","Post-run within 30 min: protein + carbs (Greek yogurt + fruit, eggs + toast)","Daily water goal: body weight (lbs) ÷ 2 = oz of water minimum","South FL heat: add pinch of salt + squeeze of lime to water bottles","Avoid fasted runs until your base is solid (Week 12+)","Aim for 140–160g protein/day to preserve muscle while losing fat","Reduce processed food & alcohol — these spike inflammation + slow recovery"];
+const PUSHUP_PROG=[{week:"1–2",reps:"3 × max (aim 8–12)"},{week:"3–4",reps:"3 × 12–15"},{week:"5–6",reps:"3 × 15–20"},{week:"7–8",reps:"4 × 20"},{week:"9–12",reps:"4 × 25 + push-up variations"},{week:"13–20",reps:"5 × 25–30 + weighted vest optional"}];
+const PULLUP_PROG=[{week:"1–4",reps:"3 × 5 negatives (jump up, lower slow)"},{week:"5–8",reps:"3 × 3–5 assisted or band-assisted"},{week:"9–12",reps:"3 × 5 full pull-ups"},{week:"13–20",reps:"3 × 8–10 full pull-ups"},{week:"21+",reps:"4 × 12–15 pull-ups"}];
+const MEAL_PLAN={
+  principles:[
+    {icon:"🥩",label:"Protein target",detail:"140–160g/day — eggs, chicken, fish, Greek yogurt, cottage cheese"},
+    {icon:"🍚",label:"Carb timing",detail:"Eat most carbs around workouts. Cut them back on rest days."},
+    {icon:"🧂",label:"Electrolytes daily",detail:"Salt your food. Add a pinch to morning water. Use Nuun/LMNT on run days."},
+    {icon:"🚫",label:"Avoid",detail:"Fried food, sugary drinks, alcohol on training nights, skipping meals before runs"},
+    {icon:"⚖️",label:"Calorie target",detail:"~2,200–2,400 cal/day for fat loss while fueling training (adjust by hunger)"},
+  ],
+  days:[
+    {label:"Run Day",color:"#16a34a",emoji:"🏃",note:"Higher carbs, moderate fat. Don't skimp — you need fuel.",meals:[
+      {time:"Wake up",name:"Pre-Run Fuel",items:["1 banana or 2 slices toast + 1 tbsp peanut butter","8–12 oz water + electrolyte tab","Optional: black coffee (but drink extra water)"]},
+      {time:"Post-Run (within 30 min)",name:"Recovery Meal",items:["3 scrambled eggs + 2 slices whole grain toast","1 cup Greek yogurt with berries","16 oz water with pinch of salt"]},
+      {time:"Lunch",name:"Big Midday Plate",items:["6 oz grilled chicken or canned tuna","1 cup brown rice or sweet potato","Large salad with olive oil + lemon dressing","Handful of almonds"]},
+      {time:"Snack",name:"Afternoon Boost",items:["Cottage cheese (1 cup) + sliced apple","OR: 2 hard boiled eggs + handful of pretzels"]},
+      {time:"Dinner",name:"Lean & Satisfying",items:["6 oz salmon, tilapia, or lean ground turkey","Roasted broccoli, zucchini, or asparagus","1/2 cup quinoa or small sweet potato","Glass of water with electrolytes"]},
+    ]},
+    {label:"Calisthenics Day",color:"#7c3aed",emoji:"💪",note:"Moderate carbs, higher protein. Focus on muscle recovery.",meals:[
+      {time:"Breakfast",name:"Protein-First Morning",items:["3–4 egg omelette with spinach, peppers, onion","1 slice whole grain toast","Black coffee or green tea + water"]},
+      {time:"Pre-Workout Snack",name:"Light Fuel",items:["1 apple + 1 tbsp almond butter","OR: small handful of mixed nuts + string cheese"]},
+      {time:"Lunch",name:"Power Bowl",items:["Burrito bowl: ground turkey, black beans, rice, salsa, avocado","OR: large salad with chickpeas, feta, grilled chicken"]},
+      {time:"Post-Workout",name:"Muscle Recovery",items:["Protein shake OR 1 cup cottage cheese","1 banana or handful of crackers"]},
+      {time:"Dinner",name:"Clean & Filling",items:["Baked chicken thighs (skin off) with garlic + herbs","Roasted sweet potato","Steamed green vegetables","1–2 glasses water"]},
+    ]},
+    {label:"Rest Day",color:"#475569",emoji:"🧘",note:"Lower carbs, higher veg. Let your body repair — don't overeat.",meals:[
+      {time:"Breakfast",name:"Light Start",items:["2 eggs any style + sautéed spinach","1/2 avocado on 1 slice toast","Black coffee + 16 oz water with electrolytes"]},
+      {time:"Lunch",name:"Big Salad Day",items:["Large salad: mixed greens, cucumber, tomato, olives, grilled chicken or tuna","Olive oil + red wine vinegar dressing","No heavy carbs — skip the bread"]},
+      {time:"Snack",name:"Keep it Light",items:["Greek yogurt (plain, 2%) with a drizzle of honey","OR: celery + hummus + a few almonds"]},
+      {time:"Dinner",name:"Anti-Inflammatory Plate",items:["Baked salmon or sardines (omega-3s help recovery)","Large portion of roasted or steamed veggies","Small serving of quinoa or skip grains entirely","Herbal tea before bed — chamomile helps sleep"]},
+    ]},
+    {label:"Long Run Day",color:"#0284c7",emoji:"🗺️",note:"Highest carb day of the week. Fuel aggressively before and after.",meals:[
+      {time:"2 hrs Before Run",name:"Pre-Load Meal",items:["Oatmeal with banana, honey, and a pinch of salt","OR: 2 eggs + 2 slices toast + small orange","16 oz water + electrolytes"]},
+      {time:"During Run (every 45–60 min)",name:"Mid-Run Fuel",items:["1 energy gel OR 2–3 medjool dates","Sip electrolyte water — never plain water only on long runs"]},
+      {time:"Within 30 min Post-Run",name:"Urgent Recovery",items:["Chocolate milk — optimal carb + protein ratio for recovery","OR: banana + protein shake","16 oz electrolyte water immediately"]},
+      {time:"1–2 hrs Post-Run",name:"Full Recovery Meal",items:["Large portion of pasta, rice, or potatoes","Grilled chicken or fish (6–8 oz)","Cooked vegetables with olive oil","Extra salt on your food today — you earned it"]},
+      {time:"Evening",name:"Wind-Down Snack",items:["Cottage cheese or Greek yogurt before bed (casein protein repairs overnight)","Chamomile tea","Elevate your legs while watching TV"]},
+    ]},
+  ],
+  swaps:[
+    {cat:"Protein",opts:"Eggs, chicken, tuna, salmon, ground turkey, Greek yogurt, cottage cheese, shrimp"},
+    {cat:"Complex Carbs",opts:"Brown rice, sweet potato, oats, whole grain bread, quinoa, black beans"},
+    {cat:"Vegetables",opts:"Spinach, broccoli, zucchini, asparagus, peppers, cucumber, tomato, kale"},
+    {cat:"Healthy Fats",opts:"Avocado, olive oil, almonds, peanut butter, walnuts, chia seeds"},
+    {cat:"Quick Snacks",opts:"String cheese, hard boiled eggs, apple + PB, pretzels + hummus, trail mix (no candy)"},
+  ],
+  prep:["Sunday: Cook a big batch of rice or quinoa + roast a tray of veggies","Grill or bake 4–5 chicken thighs or a salmon fillet for the week","Hard boil 6–8 eggs — grab-and-go protein all week","Pre-portion snack bags: almonds, pretzels, trail mix","Make overnight oats the night before long run / run days","Keep bananas, Greek yogurt, and peanut butter stocked at all times"],
+};
+
+// ── STATE ────────────────────────────────────────────────────────
+const STORAGE_KEY='road2262_v1';
+function loadState(){
+  try{
+    const s=localStorage.getItem(STORAGE_KEY);
+    if(s) return JSON.parse(s);
+  }catch(e){}
+  return null;
+}
+function saveState(s){
+  try{ localStorage.setItem(STORAGE_KEY,JSON.stringify(s)); }catch(e){}
+}
+
+let STATE={
+  tab:'overview',
+  week:1,
+  checkedTasks:{},
+  milestones:DEFAULT_MILESTONES.map(m=>({...m})),
+  notes:{},
+  runLog:[],
+  logForm:{date:'',distance:'',time:'',notes:''},
+  mealDay:0,
+  saveMsg:'',
+};
+
+const saved=loadState();
+if(saved){
+  if(saved.checkedTasks) STATE.checkedTasks=saved.checkedTasks;
+  if(saved.milestones) STATE.milestones=saved.milestones;
+  if(saved.notes) STATE.notes=saved.notes;
+  if(saved.runLog) STATE.runLog=saved.runLog;
+  if(saved.week) STATE.week=saved.week;
+}
+
+function persist(){
+  saveState({checkedTasks:STATE.checkedTasks,milestones:STATE.milestones,notes:STATE.notes,runLog:STATE.runLog,week:STATE.week});
+}
+
+// ── RENDER ───────────────────────────────────────────────────────
+function getPhase(w){
+  if(w<=8) return PHASES[0];
+  if(w<=20) return PHASES[1];
+  if(w<=40) return PHASES[2];
+  return PHASES[3];
+}
+function isChecked(di,ti){ return !!STATE.checkedTasks[`w${STATE.week}-d${di}-t${ti}`]; }
+function getDayProg(di){ const t=WEEKLY_TEMPLATE[di].tasks; const d=t.filter((_,ti)=>isChecked(di,ti)).length; return{d,t:t.length}; }
+function getWeekPct(){
+  let d=0,t=0;
+  WEEKLY_TEMPLATE.forEach((day,di)=>day.tasks.forEach((_,ti)=>{t++;if(isChecked(di,ti))d++;}));
+  return Math.round((d/t)*100);
+}
+
+function exportData(){
+  const data={checkedTasks:STATE.checkedTasks,milestones:STATE.milestones,notes:STATE.notes,runLog:STATE.runLog,week:STATE.week};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download='marathon-journal-backup.json'; a.click();
+  URL.revokeObjectURL(url);
+}
+function importData(e){
+  const file=e.target.files[0];
+  if(!file) return;
+  const reader=new FileReader();
+  reader.onload=function(ev){
+    try{
+      const data=JSON.parse(ev.target.result);
+      if(data.checkedTasks) STATE.checkedTasks=data.checkedTasks;
+      if(data.milestones) STATE.milestones=data.milestones;
+      if(data.notes) STATE.notes=data.notes;
+      if(data.runLog) STATE.runLog=data.runLog;
+      if(data.week) STATE.week=data.week;
+      persist();
+      STATE.saveMsg='✓ Data imported successfully!';
+      render();
+      setTimeout(()=>{STATE.saveMsg='';render();},3000);
+    }catch(err){ alert('Could not read file. Make sure it is a valid backup JSON.'); }
+  };
+  reader.readAsText(file);
+}
+
+// ── HTML BUILDERS ────────────────────────────────────────────────
+function card(content,extra=''){
+  return `<div style="background:#0f172a;border:1px solid #1e293b;border-radius:10px;padding:16px;margin-bottom:14px${extra}">${content}</div>`;
+}
+function sectionTitle(text,color='#4ade80'){
+  return `<div style="font-size:14px;color:${color};margin-bottom:12px">${text}</div>`;
+}
+function arrow(color='#4ade80'){ return `<span style="color:${color};font-size:11px;margin-top:3px;flex-shrink:0">→</span>`; }
+
+function renderOverview(){
+  const p=getPhase(STATE.week);
+  const stats=[{l:'Starting Weight',v:'220 lbs',s:'Goal: ~185 lbs'},{l:'Current Pace',v:'13:00/mi',s:'Goal: sub 10:00'},{l:'Race Distance',v:'26.2 mi',s:'April 2027'}];
+  let html=`<h2 style="color:#4ade80;font-weight:normal;font-size:18px;margin-bottom:16px">Your Goals & Phases</h2>`;
+  html+=`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px">`;
+  stats.forEach(s=>{ html+=`<div style="background:#0f172a;border:1px solid #1e293b;border-radius:10px;padding:14px 12px;text-align:center"><div style="font-size:10px;color:#4ade80;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px">${s.l}</div><div style="font-size:20px;color:#f8fafc">${s.v}</div><div style="font-size:11px;color:#475569;margin-top:4px">${s.s}</div></div>`; });
+  html+=`</div>`;
+  html+=`<h3 style="color:#94a3b8;font-weight:normal;font-size:13px;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:12px">Training Phases</h3>`;
+  PHASES.forEach(ph=>{
+    const active=STATE.week<=(ph.id===1?8:ph.id===2?20:ph.id===3?40:47)&&STATE.week>(ph.id===1?0:ph.id===2?8:ph.id===3?20:40);
+    html+=`<div style="background:${active?ph.color+'11':'#0f172a'};border:1px solid ${ph.color}33;border-left:3px solid ${ph.color};border-radius:10px;padding:14px 16px;margin-bottom:10px"><div style="display:flex;justify-content:space-between;align-items:center"><div><span style="color:${ph.color};font-size:15px">Phase ${ph.id}: ${ph.name}</span><span style="color:#475569;font-size:12px;margin-left:10px">${ph.weeks} · ${ph.dates}</span></div><span style="font-size:11px;color:#475569">${ph.weeklyMiles}</span></div><div style="font-size:13px;color:#94a3b8;margin-top:6px">${ph.goal}</div></div>`;
+  });
+  html+=`<h3 style="color:#94a3b8;font-weight:normal;font-size:13px;letter-spacing:0.1em;text-transform:uppercase;margin:24px 0 12px">Weekly Structure</h3>`;
+  html+=`<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px">`;
+  WEEKLY_TEMPLATE.forEach(d=>{ html+=`<div style="background:#0f172a;border:1px solid ${d.color}44;border-top:2px solid ${d.color};border-radius:8px;padding:10px 4px;text-align:center"><div style="font-size:9px;color:#475569">${d.day.slice(0,3).toUpperCase()}</div><div style="font-size:18px;margin:6px 0">${d.emoji}</div><div style="font-size:9px;color:${d.color};line-height:1.3">${d.type.split(' – ')[0]}</div></div>`; });
+  html+=`</div>`;
+  return html;
+}
+
+function renderWeekly(){
+  const p=getPhase(STATE.week);
+  let html=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px"><h2 style="color:#4ade80;font-weight:normal;font-size:18px;margin:0">Week ${STATE.week} Checklist</h2><span style="font-size:12px;color:#475569">Phase: ${p.name} · ${p.weeklyMiles}</span></div>`;
+  WEEKLY_TEMPLATE.forEach((day,di)=>{
+    const pr=getDayProg(di);
+    const done=pr.d===pr.t;
+    html+=`<div style="background:${done?'#0a1f12':'#0f172a'};border:1px solid ${done?day.color+'66':'#1e293b'};border-left:3px solid ${day.color};border-radius:10px;margin-bottom:14px;overflow:hidden">`;
+    html+=`<div style="padding:14px 16px;display:flex;justify-content:space-between;align-items:center"><div style="display:flex;align-items:center;gap:10px"><span style="font-size:20px">${day.emoji}</span><div><div style="font-size:13px;color:#94a3b8">${day.day}</div><div style="font-size:15px;color:${day.color}">${day.type}</div></div></div><div style="text-align:right"><div style="font-size:12px;color:${done?day.color:'#475569'}">${pr.d}/${pr.t}</div>${done?`<div style="font-size:10px;color:${day.color}">✓ DONE</div>`:''}</div></div>`;
+    html+=`<div style="padding:0 16px 14px">`;
+    day.tasks.forEach((task,ti)=>{
+      const chk=isChecked(di,ti);
+      html+=`<div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:8px;cursor:pointer" onclick="toggleTask(${di},${ti})">`;
+      html+=`<div style="width:18px;height:18px;border-radius:4px;border:1.5px solid ${chk?day.color:'#334155'};background:${chk?day.color:'transparent'};flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center">${chk?`<span style="color:#0a0f1a;font-size:11px;font-weight:bold">✓</span>`:''}</div>`;
+      html+=`<span style="font-size:13px;color:${chk?'#475569':'#cbd5e1'};text-decoration:${chk?'line-through':'none'};line-height:1.5">${task}</span>`;
+      html+=`</div>`;
+    });
+    html+=`</div></div>`;
+  });
+  const noteVal=(STATE.notes[STATE.week]||'').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+  html+=`<div style="background:#0f172a;border:1px solid #1e293b;border-radius:10px;padding:16px;margin-top:8px"><div style="font-size:12px;color:#4ade80;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px">Week ${STATE.week} Notes</div><textarea id="weeknote" onchange="saveNote()" oninput="saveNote()" placeholder="How did this week go? Any pain, PRs, observations..." style="width:100%;min-height:80px;background:#0a0f1a;border:1px solid #1e293b;border-radius:6px;color:#e2e8f0;padding:10px 12px;font-size:13px;resize:vertical;box-sizing:border-box;font-family:Georgia,serif">${noteVal}</textarea></div>`;
+  return html;
+}
+
+function renderNutrition(){
+  const day=MEAL_PLAN.days[STATE.mealDay];
+  let html=`<h2 style="color:#4ade80;font-weight:normal;font-size:18px;margin-bottom:4px">Daily Meal Plan</h2><p style="color:#475569;font-size:13px;margin-bottom:20px">Rotate between these templates based on your day type.</p>`;
+  // principles
+  html+=`<div style="background:#0f172a;border:1px solid #1e293b;border-radius:10px;padding:16px;margin-bottom:20px"><div style="font-size:13px;color:#facc15;margin-bottom:12px">⚡ Core Nutrition Principles</div>`;
+  MEAL_PLAN.principles.forEach(p=>{ html+=`<div style="display:flex;gap:12px;margin-bottom:10px;align-items:flex-start"><span style="font-size:16px;flex-shrink:0">${p.icon}</span><div><span style="font-size:13px;color:#e2e8f0">${p.label}: </span><span style="font-size:13px;color:#64748b">${p.detail}</span></div></div>`; });
+  html+=`</div>`;
+  // day selector
+  html+=`<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:20px">`;
+  MEAL_PLAN.days.forEach((d,i)=>{
+    const active=i===STATE.mealDay;
+    html+=`<button onclick="setMealDay(${i})" style="background:${active?d.color+'22':'#0f172a'};border:1px solid ${active?d.color:'#1e293b'};border-radius:10px;padding:12px 14px;text-align:left;transition:all 0.15s"><div style="font-size:18px;margin-bottom:4px">${d.emoji}</div><div style="font-size:13px;color:${active?d.color:'#94a3b8'}">${d.label}</div></button>`;
+  });
+  html+=`</div>`;
+  // active day
+  html+=`<div style="background:${day.color}11;border:1px solid ${day.color}33;border-radius:10px;padding:12px 16px;margin-bottom:16px"><span style="font-size:13px;color:${day.color}">💡 </span><span style="font-size:13px;color:#94a3b8">${day.note}</span></div>`;
+  day.meals.forEach(meal=>{
+    html+=`<div style="background:#0f172a;border:1px solid #1e293b;border-left:3px solid ${day.color};border-radius:10px;padding:14px 16px;margin-bottom:12px">`;
+    html+=`<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px"><div style="font-size:15px;color:#f8fafc">${meal.name}</div><div style="font-size:11px;color:${day.color};background:${day.color}18;border-radius:4px;padding:2px 8px;white-space:nowrap;margin-left:8px">${meal.time}</div></div>`;
+    meal.items.forEach(item=>{ html+=`<div style="display:flex;gap:8px;margin-bottom:6px">${arrow(day.color)}<span style="font-size:13px;color:#94a3b8;line-height:1.5">${item}</span></div>`; });
+    html+=`</div>`;
+  });
+  // swaps
+  html+=`<div style="background:#0f172a;border:1px solid #1e293b;border-radius:10px;padding:16px;margin-bottom:16px"><div style="font-size:13px;color:#f97316;margin-bottom:12px">🔄 Mix & Match Ingredients</div>`;
+  MEAL_PLAN.swaps.forEach(s=>{ html+=`<div style="margin-bottom:10px"><div style="font-size:12px;color:#64748b;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:4px">${s.cat}</div><div style="font-size:13px;color:#94a3b8">${s.opts}</div></div>`; });
+  html+=`</div>`;
+  // prep
+  html+=`<div style="background:#0f172a;border:1px solid #4ade8033;border-left:3px solid #4ade80;border-radius:10px;padding:16px"><div style="font-size:13px;color:#4ade80;margin-bottom:12px">📦 Sunday Meal Prep Checklist</div>`;
+  MEAL_PLAN.prep.forEach(t=>{ html+=`<div style="display:flex;gap:8px;margin-bottom:8px">${arrow()}<span style="font-size:13px;color:#94a3b8;line-height:1.5">${t}</span></div>`; });
+  html+=`</div>`;
+  return html;
+}
+
+function renderMilestones(){
+  const done=STATE.milestones.filter(m=>m.done).length;
+  const pct=Math.round((done/STATE.milestones.length)*100);
+  let html=`<h2 style="color:#4ade80;font-weight:normal;font-size:18px;margin-bottom:6px">Race Milestones</h2><p style="color:#475569;font-size:13px;margin-bottom:20px">Tap to check off goals as you hit them.</p>`;
+  STATE.milestones.forEach((m,i)=>{
+    html+=`<div onclick="toggleMilestone(${i})" style="background:${m.done?'#0a1f12':'#0f172a'};border:1px solid ${m.done?'#4ade8066':'#1e293b'};border-radius:10px;padding:14px 16px;margin-bottom:10px;cursor:pointer;display:flex;align-items:center;gap:14px">`;
+    html+=`<div style="width:20px;height:20px;border-radius:50%;flex-shrink:0;border:2px solid ${m.done?'#4ade80':'#334155'};background:${m.done?'#4ade80':'transparent'};display:flex;align-items:center;justify-content:center">${m.done?'<span style="color:#0a0f1a;font-size:11px;font-weight:bold">✓</span>':''}</div>`;
+    html+=`<div style="flex:1"><span style="font-size:11px;color:${m.done?'#4ade80':'#475569'};margin-right:8px">Week ${m.week}</span><span style="font-size:14px;color:${m.done?'#94a3b8':'#e2e8f0'};text-decoration:${m.done?'line-through':'none'}">${m.goal}</span></div></div>`;
+  });
+  html+=`<div style="background:#0f172a;border:1px solid #1e293b;border-radius:10px;padding:16px;margin-top:20px"><div style="font-size:13px;color:#4ade80;margin-bottom:8px">📊 Progress</div><div style="display:flex;justify-content:space-between;font-size:13px;color:#94a3b8;margin-bottom:8px"><span>${done} of ${STATE.milestones.length} milestones hit</span><span>${pct}%</span></div><div style="height:6px;background:#1e293b;border-radius:3px;overflow:hidden"><div style="height:100%;width:${pct}%;background:linear-gradient(90deg,#4ade80,#22c55e);border-radius:3px"></div></div></div>`;
+  return html;
+}
+
+function renderLog(){
+  const iStyle=`width:100%;background:#0a0f1a;border:1px solid #1e293b;border-radius:6px;color:#e2e8f0;padding:8px 10px;font-size:13px;box-sizing:border-box;font-family:Georgia,serif`;
+  const f=STATE.logForm;
+  let html=`<h2 style="color:#4ade80;font-weight:normal;font-size:18px;margin-bottom:20px">Run Log</h2>`;
+  html+=`<div style="background:#0f172a;border:1px solid #1e293b;border-radius:10px;padding:16px;margin-bottom:24px"><div style="font-size:12px;color:#4ade80;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:12px">Log a Run</div>`;
+  html+=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">`;
+  html+=`<div><div style="font-size:11px;color:#475569;margin-bottom:4px">Date</div><input type="date" id="lf_date" value="${f.date}" oninput="updateLogForm('date',this.value)" style="${iStyle}"></div>`;
+  html+=`<div><div style="font-size:11px;color:#475569;margin-bottom:4px">Distance (miles)</div><input type="number" step="0.1" id="lf_dist" value="${f.distance}" placeholder="3.1" oninput="updateLogForm('distance',this.value)" style="${iStyle}"></div>`;
+  html+=`<div><div style="font-size:11px;color:#475569;margin-bottom:4px">Time (mm:ss)</div><input type="text" id="lf_time" value="${f.time}" placeholder="38:00" oninput="updateLogForm('time',this.value)" style="${iStyle}"></div>`;
+  html+=`<div><div style="font-size:11px;color:#475569;margin-bottom:4px">Notes</div><input type="text" id="lf_notes" value="${f.notes.replace(/"/g,'&quot;')}" placeholder="Felt good, humid..." oninput="updateLogForm('notes',this.value)" style="${iStyle}"></div>`;
+  html+=`</div><button onclick="addRun()" style="background:#4ade80;color:#0a0f1a;border:none;border-radius:6px;padding:10px 20px;font-size:13px;cursor:pointer;font-family:Georgia,serif">+ Add Run</button></div>`;
+  if(STATE.runLog.length===0){
+    html+=`<div style="text-align:center;color:#334155;padding:40px;font-size:14px">No runs logged yet. Lace up! 👟</div>`;
+  } else {
+    const total=STATE.runLog.reduce((a,r)=>a+parseFloat(r.distance||0),0).toFixed(1);
+    [...STATE.runLog].reverse().forEach((r,i)=>{
+      const idx=STATE.runLog.length-1-i;
+      html+=`<div style="background:#0f172a;border:1px solid #1e293b;border-radius:10px;padding:12px 16px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center">`;
+      html+=`<div><div style="font-size:13px;color:#94a3b8">${r.date}</div><div style="font-size:15px;color:#f8fafc;margin-top:2px">${r.distance} miles${r.time?' · '+r.time:''}</div>${r.notes?`<div style="font-size:12px;color:#475569;margin-top:2px">${r.notes}</div>`:''}</div>`;
+      html+=`<div style="display:flex;align-items:center;gap:8px"><span style="font-size:22px">🏃</span><button onclick="deleteRun(${idx})" style="background:none;border:1px solid #334155;color:#475569;border-radius:4px;padding:4px 8px;font-size:11px;cursor:pointer">✕</button></div></div>`;
+    });
+    html+=`<div style="background:#0f172a;border:1px solid #1e293b;border-radius:10px;padding:16px;margin-top:8px"><div style="font-size:12px;color:#4ade80">Total miles logged: ${total}</div></div>`;
+  }
+  return html;
+}
+
+function renderGuide(){
+  let html=`<h2 style="color:#4ade80;font-weight:normal;font-size:18px;margin-bottom:20px">Training Guide</h2>`;
+  html+=`<div style="background:#0f172a;border:1px solid #1e293b;border-radius:10px;padding:16px;margin-bottom:16px">${sectionTitle('🥗 Nutrition Rules (South FL Runner)','#facc15')}`;
+  NUTRITION_TIPS.forEach(t=>{ html+=`<div style="display:flex;gap:10px;margin-bottom:8px">${arrow()}<span style="font-size:13px;color:#94a3b8;line-height:1.5">${t}</span></div>`; });
+  html+=`</div>`;
+  html+=`<div style="background:#0f172a;border:1px solid #1e293b;border-radius:10px;padding:16px;margin-bottom:16px">${sectionTitle('💪 Push-Up Progression','#f97316')}`;
+  PUSHUP_PROG.forEach((p,i)=>{ html+=`<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:${i<PUSHUP_PROG.length-1?'1px solid #1e293b':'none'}"><span style="font-size:13px;color:#64748b">Weeks ${p.week}</span><span style="font-size:13px;color:#e2e8f0">${p.reps}</span></div>`; });
+  html+=`</div>`;
+  html+=`<div style="background:#0f172a;border:1px solid #1e293b;border-radius:10px;padding:16px;margin-bottom:16px">${sectionTitle('🏋️ Pull-Up Progression','#60a5fa')}`;
+  PULLUP_PROG.forEach((p,i)=>{ html+=`<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:${i<PULLUP_PROG.length-1?'1px solid #1e293b':'none'}"><span style="font-size:13px;color:#64748b">Weeks ${p.week}</span><span style="font-size:13px;color:#e2e8f0">${p.reps}</span></div>`; });
+  html+=`</div>`;
+  html+=`<div style="background:#0f172a;border:1px solid #60a5fa33;border-left:3px solid #60a5fa;border-radius:10px;padding:16px;margin-bottom:16px">${sectionTitle('🏅 Pace Strategy for Sub-10:00 Marathon','#60a5fa')}`;
+  ["Target race pace: 9:45–9:55/mi (gives buffer under 10:00)","Start conservatively — miles 1–6 should feel easy, almost too slow","Use run/walk if needed: 9 min run, 1 min walk still averages ~10:15 early on","Negative split goal: run second half slightly faster than first","Miles 18–22 are the 'wall' — this is where your long run training pays off","Carry 2–3 gels and take every 45 min starting at mile 6"].forEach((t,i)=>{ html+=`<div style="display:flex;gap:10px;margin-bottom:8px"><span style="color:#60a5fa;font-size:12px;margin-top:2px;flex-shrink:0">${i+1}.</span><span style="font-size:13px;color:#94a3b8;line-height:1.5">${t}</span></div>`; });
+  html+=`</div>`;
+  html+=`<div style="background:#0f172a;border:1px solid #4ade8033;border-left:3px solid #4ade80;border-radius:10px;padding:16px">${sectionTitle('🏃 Running Form Tips for Speed')}`;
+  ["Cadence: aim for 170–180 steps/min — shorter, quicker strides are more efficient","Land midfoot, not on your heel — reduces impact and injury risk","Keep shoulders relaxed and arms at 90°, swinging forward not across your body","Slight forward lean from the ankles (not waist)","Eyes forward 15–20 feet ahead, not at the ground","Breathe rhythmically: try 3 steps inhale, 2 steps exhale"].forEach(t=>{ html+=`<div style="display:flex;gap:10px;margin-bottom:8px">${arrow()}<span style="font-size:13px;color:#94a3b8;line-height:1.5">${t}</span></div>`; });
+  html+=`</div>`;
+  return html;
+}
+
+function render(){
+  const p=getPhase(STATE.week);
+  const pct=getWeekPct();
+  const tabs=[{id:'overview',label:'Overview'},{id:'weekly',label:'This Week'},{id:'nutrition',label:'Meal Plan'},{id:'milestones',label:'Milestones'},{id:'log',label:'Run Log'},{id:'guide',label:'Guide'}];
+
+  let tabBtns=tabs.map(t=>`<button onclick="setTab('${t.id}')" style="background:none;border:none;padding:14px 14px;cursor:pointer;color:${STATE.tab===t.id?'#4ade80':'#64748b'};border-bottom:${STATE.tab===t.id?'2px solid #4ade80':'2px solid transparent'};font-size:13px;letter-spacing:0.05em;white-space:nowrap;transition:color 0.2s;font-family:Georgia,serif">${t.label}</button>`).join('');
+
+  let content='';
+  if(STATE.tab==='overview') content=renderOverview();
+  else if(STATE.tab==='weekly') content=renderWeekly();
+  else if(STATE.tab==='nutrition') content=renderNutrition();
+  else if(STATE.tab==='milestones') content=renderMilestones();
+  else if(STATE.tab==='log') content=renderLog();
+  else if(STATE.tab==='guide') content=renderGuide();
+
+  const saveMsg=STATE.saveMsg?`<div style="position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#4ade80;color:#0a0f1a;padding:10px 20px;border-radius:8px;font-size:13px;z-index:999;font-family:Georgia,serif">${STATE.saveMsg}</div>`:'';
+
+  document.getElementById('app').innerHTML=`
+  <div style="background:linear-gradient(135deg,#0f172a 0%,#1e293b 50%,#0f2a1a 100%);border-bottom:1px solid #1e3a2f;padding:28px 20px 20px;position:relative;overflow:hidden">
+    <div style="position:absolute;top:0;left:0;right:0;bottom:0;background:radial-gradient(ellipse at 20% 50%,rgba(74,222,128,0.06) 0%,transparent 60%);pointer-events:none"></div>
+    <div style="max-width:700px;margin:0 auto;position:relative">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">
+        <div>
+          <div style="font-size:11px;letter-spacing:0.2em;color:#4ade80;text-transform:uppercase;margin-bottom:6px">Marathon Training Journal</div>
+          <h1 style="margin:0;font-size:26px;font-weight:normal;color:#f8fafc;line-height:1.2">Road to 26.2</h1>
+          <div style="font-size:13px;color:#64748b;margin-top:4px">May 25, 2026 → April 2027 · 47 Weeks</div>
+        </div>
+        <div style="background:${p.color}22;border:1px solid ${p.color}44;border-radius:12px;padding:10px 16px;text-align:center;min-width:130px">
+          <div style="font-size:10px;letter-spacing:0.15em;color:${p.color};text-transform:uppercase">Current Phase</div>
+          <div style="font-size:18px;color:${p.color};font-weight:bold;margin-top:2px">${p.name}</div>
+          <div style="font-size:11px;color:#94a3b8;margin-top:2px">${p.weeks}</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;margin-top:20px">
+        <span style="font-size:13px;color:#64748b">Week:</span>
+        <button onclick="setWeek(${Math.max(1,STATE.week-1)})" style="background:#1e293b;border:1px solid #334155;color:#94a3b8;border-radius:6px;width:28px;height:28px;cursor:pointer;font-size:16px">‹</button>
+        <span style="font-size:20px;color:#f8fafc;min-width:30px;text-align:center">${STATE.week}</span>
+        <button onclick="setWeek(${Math.min(47,STATE.week+1)})" style="background:#1e293b;border:1px solid #334155;color:#94a3b8;border-radius:6px;width:28px;height:28px;cursor:pointer;font-size:16px">›</button>
+        <div style="flex:1;height:6px;background:#1e293b;border-radius:3px;overflow:hidden"><div style="height:100%;width:${pct}%;background:linear-gradient(90deg,${p.color},${p.color}88);border-radius:3px;transition:width 0.3s"></div></div>
+        <span style="font-size:12px;color:#64748b">${pct}%</span>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+        <button onclick="exportData()" style="background:#1e293b;border:1px solid #334155;color:#94a3b8;border-radius:6px;padding:7px 14px;font-size:12px;cursor:pointer;font-family:Georgia,serif">⬇ Export Backup</button>
+        <label style="background:#1e293b;border:1px solid #334155;color:#94a3b8;border-radius:6px;padding:7px 14px;font-size:12px;cursor:pointer">⬆ Import Backup<input type="file" accept=".json" onchange="importData(event)" style="display:none"></label>
+      </div>
+    </div>
+  </div>
+  <div style="background:#0f172a;border-bottom:1px solid #1e293b;padding:0 20px">
+    <div style="max-width:700px;margin:0 auto" class="tab-bar">${tabBtns}</div>
+  </div>
+  <div style="max-width:700px;margin:0 auto;padding:24px 16px">${content}</div>
+  ${saveMsg}
+  `;
+}
+
+// ── ACTIONS ──────────────────────────────────────────────────────
+function setTab(t){ STATE.tab=t; render(); }
+function setWeek(w){ STATE.week=w; persist(); render(); }
+function setMealDay(i){ STATE.mealDay=i; render(); }
+function toggleTask(di,ti){
+  const k=`w${STATE.week}-d${di}-t${ti}`;
+  STATE.checkedTasks[k]=!STATE.checkedTasks[k];
+  persist();
+  STATE.saveMsg='✓ Saved';
+  render();
+  setTimeout(()=>{ STATE.saveMsg=''; render(); },1500);
+}
+function saveNote(){
+  const el=document.getElementById('weeknote');
+  if(el){ STATE.notes[STATE.week]=el.value; persist(); }
+}
+function toggleMilestone(i){
+  STATE.milestones[i].done=!STATE.milestones[i].done;
+  persist();
+  STATE.saveMsg='✓ Saved';
+  render();
+  setTimeout(()=>{ STATE.saveMsg=''; render(); },1500);
+}
+function updateLogForm(k,v){ STATE.logForm[k]=v; }
+function addRun(){
+  if(!STATE.logForm.date||!STATE.logForm.distance) return;
+  STATE.runLog.push({...STATE.logForm,id:Date.now()});
+  STATE.logForm={date:'',distance:'',time:'',notes:''};
+  persist();
+  STATE.saveMsg='✓ Run logged!';
+  render();
+  setTimeout(()=>{ STATE.saveMsg=''; render(); },2000);
+}
+function deleteRun(idx){
+  if(confirm('Delete this run entry?')){ STATE.runLog.splice(idx,1); persist(); render(); }
+}
+function exportData(){
+  const data={checkedTasks:STATE.checkedTasks,milestones:STATE.milestones,notes:STATE.notes,runLog:STATE.runLog,week:STATE.week};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download='marathon-journal-backup.json'; a.click();
+  URL.revokeObjectURL(url);
+}
+function importData(e){
+  const file=e.target.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=function(ev){
+    try{
+      const data=JSON.parse(ev.target.result);
+      if(data.checkedTasks) STATE.checkedTasks=data.checkedTasks;
+      if(data.milestones) STATE.milestones=data.milestones;
+      if(data.notes) STATE.notes=data.notes;
+      if(data.runLog) STATE.runLog=data.runLog;
+      if(data.week) STATE.week=data.week;
+      persist();
+      STATE.saveMsg='✓ Data imported successfully!';
+      render();
+      setTimeout(()=>{ STATE.saveMsg=''; render(); },3000);
+    }catch(err){ alert('Could not read file. Make sure it is a valid backup JSON.'); }
+  };
+  reader.readAsText(file);
+}
+
+// ── INIT ─────────────────────────────────────────────────────────
+render();
+</script>
+</body>
+</html>
