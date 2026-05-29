@@ -1,0 +1,280 @@
+/* Modern Core Design System for Marathon Journal */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: #060a13; /* Even deeper, sleeker dark background */
+  color: #e2e8f0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; /* Modern sans-serif default, fallbacks to system fonts */
+  min-height: 100vh;
+  padding-bottom: 60px;
+}
+
+/* Elegant serif styling exclusively for journal contents if needed */
+h1, h2, h3, .journal-font {
+  font-family: Georgia, 'Times New Roman', serif;
+}
+
+button {
+  font-family: system-ui, sans-serif;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+textarea, input, select {
+  font-family: system-ui, sans-serif;
+  transition: all 0.2s ease-in-out;
+}
+
+input[type=date]::-webkit-calendar-picker-indicator {
+  filter: invert(0.5);
+}
+
+/* Customized Scrollbars */
+::-webkit-scrollbar {
+  height: 6px;
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0f172a;
+}
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}
+
+.tab-bar {
+  display: flex;
+  overflow-x: auto;
+  gap: 0;
+  -webkit-overflow-scrolling: touch;
+}
+.tab-bar::-webkit-scrollbar {
+  display: none;
+}
+
+/* --- COLLAPSIBLE DETAILS ACCORDIONS --- */
+details {
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+details[open] {
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.3);
+  transform: translateY(1px);
+}
+summary::-webkit-details-marker {
+  display: none;
+}
+summary {
+  list-style: none;
+}
+summary:focus {
+  outline: none;
+}
+
+/* --- CLOUD SYNC & AUTHENTICATION STYLES --- */
+
+/* Sync Badge Button */
+.sync-btn {
+  background: rgba(30, 41, 59, 0.5);
+  border: 1px solid #1e293b;
+  color: #94a3b8;
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-size: 11px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  backdrop-filter: blur(8px);
+  font-weight: bold;
+}
+.sync-btn:hover {
+  border-color: #4ade80;
+  color: #4ade80;
+  transform: translateY(-1px);
+  background: rgba(74, 222, 128, 0.03);
+}
+.sync-btn.connected {
+  border-color: rgba(74, 222, 128, 0.3);
+  color: #4ade80;
+  background: rgba(74, 222, 128, 0.05);
+}
+
+/* Modal Overlay & Dialog */
+.auth-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(3, 7, 18, 0.85); /* Darker backdrop filter */
+  backdrop-filter: blur(10px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.auth-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.auth-modal {
+  background: #0b1329; /* Modern navy/dark card */
+  border: 1px solid #1f2d5a;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 420px;
+  padding: 28px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+  transform: scale(0.95) translateY(10px);
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  position: relative;
+  overflow: hidden;
+}
+.auth-overlay.active .auth-modal {
+  transform: scale(1) translateY(0);
+}
+.auth-modal::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #4ade80, #facc15, #f97316);
+}
+
+.auth-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: none;
+  border: none;
+  color: #64748b;
+  font-size: 18px;
+  line-height: 1;
+  padding: 4px;
+}
+.auth-close:hover {
+  color: #f8fafc;
+}
+
+.auth-title {
+  font-size: 20px;
+  font-weight: bold;
+  color: #f8fafc;
+  margin-bottom: 6px;
+}
+
+.auth-subtitle {
+  font-size: 13px;
+  color: #64748b;
+  margin-bottom: 20px;
+  line-height: 1.4;
+}
+
+.auth-group {
+  margin-bottom: 16px;
+}
+.auth-label {
+  display: block;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: bold;
+  color: #4ade80;
+  margin-bottom: 6px;
+}
+.auth-input {
+  width: 100%;
+  background: #060a13;
+  border: 1px solid #1e293b;
+  border-radius: 8px;
+  color: #e2e8f0;
+  padding: 10px 14px;
+  font-size: 13px;
+  outline: none;
+}
+.auth-input:focus {
+  border-color: #4ade80;
+  box-shadow: 0 0 0 2px rgba(74, 222, 128, 0.15);
+}
+
+.auth-btn {
+  width: 100%;
+  background: #4ade80;
+  color: #0a0f1a;
+  border: none;
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 13px;
+  font-weight: bold;
+  margin-top: 8px;
+}
+.auth-btn:hover {
+  background: #34d399;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(52, 211, 153, 0.2);
+}
+.auth-btn:active {
+  transform: translateY(0);
+}
+
+.auth-switch {
+  text-align: center;
+  font-size: 13px;
+  color: #64748b;
+  margin-top: 18px;
+}
+.auth-switch-link {
+  color: #3b82f6;
+  text-decoration: none;
+  cursor: pointer;
+}
+.auth-switch-link:hover {
+  text-decoration: underline;
+}
+
+/* Micro-Animations & Status Updates */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+.syncing-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #4ade80;
+  animation: pulse 1.5s infinite ease-in-out;
+  display: inline-block;
+}
+
+/* Card hover effect for premium interactivity */
+.hover-card {
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.hover-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(74, 222, 128, 0.3) !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+}
+
+/* SVG Chart Animations */
+svg rect {
+  transition: fill-opacity 0.25s ease, stroke-width 0.2s ease, stroke 0.2s ease;
+}
+svg rect:hover {
+  fill-opacity: 1 !important;
+  stroke: #ffffff !important;
+  stroke-width: 1.5px !important;
+}
