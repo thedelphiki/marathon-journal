@@ -4,18 +4,18 @@ const PROFILE_STORAGE_KEY = 'road2262_profile_v1';
 
 const MarathonProfile = {
   state: {
-    name: "Runner",
+    name: "",
     gender: "male",
-    age: 28,
-    weight: 220,
-    targetWeight: 185,
-    height: 70, // in inches (e.g. 5'10" = 70")
-    currentEasyPace: "13:00", // mm:ss
-    targetMarathonPace: "09:55", // mm:ss
-    diet: "none", // none, vegetarian, vegan, keto, gluten-free
-    climate: "south-fl", // south-fl, moderate, cold
-    startDate: "2026-05-25",
-    raceDate: "2027-04-12"
+    age: 30,
+    weight: 180,
+    targetWeight: 165,
+    height: 70,
+    currentEasyPace: "12:00",
+    targetMarathonPace: "10:00",
+    diet: "none",
+    climate: "moderate",
+    startDate: new Date().toISOString().split('T')[0],
+    raceDate: new Date(Date.now() + 47 * 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
   },
 
   isProfileOpen: false,

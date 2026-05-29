@@ -889,3 +889,10 @@ if (window.MarathonProfile) {
   window.MarathonProfile.updateCalculatedDefaults();
 }
 render();
+
+// Show onboarding to first-time users (after render so app is ready behind it)
+document.addEventListener('DOMContentLoaded', function() {
+  if (window.MarathonOnboarding) {
+    MarathonOnboarding.maybeShow();
+  }
+});
