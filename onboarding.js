@@ -1,27 +1,28 @@
 // --- ONBOARDING FLOW ---
-// Shown once to new users who have no saved profile.
-// Collects basic info, then offers account creation or guest mode.
+// Shown to any user whose profile is incomplete (no name set),
+// regardless of login state. Returning users with a saved name are never interrupted.
 
 const ONBOARDING_KEY = 'road2262_onboarded_v1';
 
 const MarathonOnboarding = {
 
-  isNewUser: function() {
-    return !localStorage.getItem(ONBOARDING_KEY) && !localStorage.getItem('road2262_profile_v1');
+  // Show if profile has no name — covers new guests AND new account holders
+  isIncomplete: function() {
+    const profile = window.MarathonProfile ? window.MarathonProfile.state : null;
+    return !profile || !profile.name || profile.name.trim() === '';
   },
 
   markComplete: function() {
     localStorage.setItem(ONBOARDING_KEY, 'true');
   },
 
-  // Main entry point — called from index on DOMContentLoaded
   maybeShow: function() {
-    if (this.isNewUser()) {
+    if (this.isIncomplete()) {
       this.showStep1();
     }
   },
 
-  // ── STEP 1: Welcome + Basic Info ──────────────────────────────
+  // ── STEP 1: Personal Info ──────────────────────────────────────
   showStep1: function() {
     this._render(`
       <div class="ob-header">
@@ -29,7 +30,6 @@ const MarathonOnboarding = {
         <h1 class="ob-title">Road to 26.2</h1>
         <p class="ob-sub">Your personal marathon training journal.<br>Let's set up your plan in under a minute.</p>
       </div>
-
       <form onsubmit="MarathonOnboarding.submitStep1(event)">
         <div class="ob-grid">
           <div class="ob-field">
@@ -60,10 +60,8 @@ const MarathonOnboarding = {
             <input type="number" id="ob-targetWeight" class="ob-input" placeholder="e.g. 185" min="80" max="400" required>
           </div>
         </div>
-
         <button type="submit" class="ob-btn">Continue →</button>
       </form>
-
       <div class="ob-step-dots">
         <span class="ob-dot ob-dot-active"></span>
         <span class="ob-dot"></span>
@@ -89,7 +87,6 @@ const MarathonOnboarding = {
   showStep2: function() {
     const today = new Date();
     const todayStr = today.toISOString().split('T')[0];
-    // Default race date ~47 weeks out
     const raceDefault = new Date(today);
     raceDefault.setDate(today.getDate() + 47 * 7);
     const raceDateStr = raceDefault.toISOString().split('T')[0];
@@ -100,16 +97,15 @@ const MarathonOnboarding = {
         <h1 class="ob-title">Your Training Plan</h1>
         <p class="ob-sub">Tell us where you're starting and where you want to go.</p>
       </div>
-
       <form onsubmit="MarathonOnboarding.submitStep2(event)">
         <div class="ob-grid">
           <div class="ob-field">
             <label class="ob-label">Current Easy Pace (min/mi)</label>
-            <input type="text" id="ob-easyPace" class="ob-input" placeholder="e.g. 13:00" value="13:00" required>
+            <input type="text" id="ob-easyPace" class="ob-input" placeholder="13:00" value="13:00" required>
           </div>
           <div class="ob-field">
             <label class="ob-label">Target Marathon Pace</label>
-            <input type="text" id="ob-racePace" class="ob-input" placeholder="e.g. 09:55" value="09:55" required>
+            <input type="text" id="ob-racePace" class="ob-input" placeholder="09:55" value="09:55" required>
           </div>
           <div class="ob-field">
             <label class="ob-label">Training Start Date</label>
@@ -138,13 +134,11 @@ const MarathonOnboarding = {
             </select>
           </div>
         </div>
-
         <div style="display:flex;gap:10px;margin-top:20px">
           <button type="button" class="ob-btn ob-btn-back" onclick="MarathonOnboarding.showStep1()">← Back</button>
           <button type="submit" class="ob-btn">Continue →</button>
         </div>
       </form>
-
       <div class="ob-step-dots">
         <span class="ob-dot"></span>
         <span class="ob-dot ob-dot-active"></span>
@@ -170,33 +164,26 @@ const MarathonOnboarding = {
   // ── STEP 3: Account or Guest ───────────────────────────────────
   showStep3: function() {
     const firebaseReady = window.isFirebaseConfigured;
-
     this._render(`
       <div class="ob-header">
         <div class="ob-logo">🎯</div>
         <h1 class="ob-title">Almost ready, ${this._draft.name || 'Runner'}!</h1>
         <p class="ob-sub">How would you like to save your progress?</p>
       </div>
-
       <div class="ob-choice-cards">
-
-        <div class="ob-card" onclick="MarathonOnboarding.chooseAccount()" style="border-color:${firebaseReady ? '#4ade8066' : '#334155'}; ${!firebaseReady ? 'opacity:0.5;pointer-events:none' : ''}">
+        <div class="ob-card" onclick="MarathonOnboarding.chooseAccount()" style="border-color:${firebaseReady ? '#4ade8066' : '#334155'};${!firebaseReady ? 'opacity:0.5;pointer-events:none' : ''}">
           <div class="ob-card-icon">☁️</div>
           <div class="ob-card-title">Create Account</div>
-          <div class="ob-card-desc">Sync across all your devices. Your data is safe even if you clear your browser. Free forever.</div>
+          <div class="ob-card-desc">Sync across all your devices. Your data is safe even if you clear your browser.</div>
           ${!firebaseReady ? '<div style="font-size:11px;color:#f87171;margin-top:6px">Firebase not configured</div>' : ''}
         </div>
-
         <div class="ob-card" onclick="MarathonOnboarding.chooseGuest()" style="border-color:#facc1566">
           <div class="ob-card-icon">📱</div>
           <div class="ob-card-title">Continue as Guest</div>
-          <div class="ob-card-desc">Data saves on this device only. You can create an account later from the app at any time.</div>
+          <div class="ob-card-desc">Data saves on this device only. You can create an account later from the app.</div>
         </div>
-
       </div>
-
       <button type="button" class="ob-btn ob-btn-back" style="margin-top:16px;max-width:120px" onclick="MarathonOnboarding.showStep2()">← Back</button>
-
       <div class="ob-step-dots">
         <span class="ob-dot"></span>
         <span class="ob-dot"></span>
@@ -205,25 +192,29 @@ const MarathonOnboarding = {
     `);
   },
 
-  // User picks account — save profile then show Firebase sign-up form
   chooseAccount: function() {
     this._saveProfile();
     this.markComplete();
     this._hide();
-    // Open the existing auth modal in sign-up mode
     if (window.MarathonAuth) {
       MarathonAuth.isSignUpMode = true;
       MarathonAuth.showSyncModal();
     }
     if (typeof render === 'function') render();
+    // Tour fires after auth modal is dismissed — handled in auth.js observer
   },
 
-  // User picks guest — save profile and launch the app
   chooseGuest: function() {
     this._saveProfile();
     this.markComplete();
     this._hide();
     if (typeof render === 'function') render();
+    // Show tour after brief delay so app renders first
+    setTimeout(function() {
+      if (window.MarathonTour && MarathonTour.shouldShow()) {
+        MarathonTour.show();
+      }
+    }, 400);
   },
 
   // ── Helpers ───────────────────────────────────────────────────
@@ -235,8 +226,6 @@ const MarathonOnboarding = {
     }
   },
 
-  _overlay: null,
-
   _render: function(html) {
     let overlay = document.getElementById('onboarding-overlay');
     if (!overlay) {
@@ -246,7 +235,6 @@ const MarathonOnboarding = {
     }
     overlay.innerHTML = `<div class="ob-modal">${html}</div>`;
     overlay.style.display = 'flex';
-    this._overlay = overlay;
   },
 
   _hide: function() {

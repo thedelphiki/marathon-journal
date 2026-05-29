@@ -563,26 +563,53 @@ function renderMilestones() {
   return html;
 }
 
+function calcPace(distance, timeStr) {
+  if (!distance || !timeStr) return null;
+  const parts = timeStr.split(':');
+  if (parts.length !== 2) return null;
+  const totalSecs = parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
+  if (!totalSecs || !parseFloat(distance)) return null;
+  const paceSecs = totalSecs / parseFloat(distance);
+  const mins = Math.floor(paceSecs / 60);
+  const secs = Math.round(paceSecs % 60);
+  return `${mins}:${secs.toString().padStart(2, '0')}/mi`;
+}
+
 function renderLog() {
   const iStyle = `width:100%;background:#0a0f1a;border:1px solid #1e293b;border-radius:6px;color:#e2e8f0;padding:8px 10px;font-size:13px;box-sizing:border-box;font-family:Georgia,serif`;
   const f = STATE.logForm;
+
+  // Live pace preview
+  const livePace = calcPace(f.distance, f.time);
+  const pacePreview = livePace
+    ? `<div style="background:#0a1f12;border:1px solid #4ade8033;border-radius:6px;padding:8px 12px;font-size:13px;color:#4ade80;text-align:center;margin-bottom:10px">⚡ Calculated pace: <strong>${livePace}</strong></div>`
+    : '';
+
   let html = `<h2 style="color:#4ade80;font-weight:normal;font-size:18px;margin-bottom:20px">Run Log</h2>`;
-  html += `<div style="background:#0f172a;border:1px solid #1e293b;border-radius:10px;padding:16px;margin-bottom:24px"><div style="font-size:12px;color:#4ade80;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:12px">Log a Run</div>`;
+  html += `<div style="background:#0f172a;border:1px solid #1e293b;border-radius:10px;padding:16px;margin-bottom:24px">`;
+  html += `<div style="font-size:12px;color:#4ade80;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:12px">Log a Run</div>`;
   html += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">`;
   html += `<div><div style="font-size:11px;color:#475569;margin-bottom:4px">Date</div><input type="date" id="lf_date" value="${f.date}" oninput="updateLogForm('date',this.value)" style="${iStyle}"></div>`;
-  html += `<div><div style="font-size:11px;color:#475569;margin-bottom:4px">Distance (miles)</div><input type="number" step="0.1" id="lf_dist" value="${f.distance}" placeholder="3.1" oninput="updateLogForm('distance',this.value)" style="${iStyle}"></div>`;
-  html += `<div><div style="font-size:11px;color:#475569;margin-bottom:4px">Time (mm:ss)</div><input type="text" id="lf_time" value="${f.time}" placeholder="38:00" oninput="updateLogForm('time',this.value)" style="${iStyle}"></div>`;
+  html += `<div><div style="font-size:11px;color:#475569;margin-bottom:4px">Distance (miles)</div><input type="number" step="0.1" id="lf_dist" value="${f.distance}" placeholder="3.1" oninput="updateLogForm('distance',this.value);updatePacePreview()" style="${iStyle}"></div>`;
+  html += `<div><div style="font-size:11px;color:#475569;margin-bottom:4px">Time (mm:ss)</div><input type="text" id="lf_time" value="${f.time}" placeholder="38:00" oninput="updateLogForm('time',this.value);updatePacePreview()" style="${iStyle}"></div>`;
   html += `<div><div style="font-size:11px;color:#475569;margin-bottom:4px">Notes</div><input type="text" id="lf_notes" value="${f.notes.replace(/"/g,'&quot;')}" placeholder="Felt good, humid..." oninput="updateLogForm('notes',this.value)" style="${iStyle}"></div>`;
-  html += `</div><button onclick="addRun()" style="background:#4ade80;color:#0a0f1a;border:none;border-radius:6px;padding:10px 20px;font-size:13px;cursor:pointer;font-family:Georgia,serif">+ Add Run</button></div>`;
-  
+  html += `</div>`;
+  html += `<div id="pace-preview">${pacePreview}</div>`;
+  html += `<button onclick="addRun()" style="background:#4ade80;color:#0a0f1a;border:none;border-radius:6px;padding:10px 20px;font-size:13px;cursor:pointer;font-family:Georgia,serif">+ Add Run</button></div>`;
+
   if (STATE.runLog.length === 0) {
     html += `<div style="text-align:center;color:#334155;padding:40px;font-size:14px">No runs logged yet. Lace up! 👟</div>`;
   } else {
     const total = STATE.runLog.reduce((a, r) => a + parseFloat(r.distance || 0), 0).toFixed(1);
     [...STATE.runLog].reverse().forEach((r, i) => {
       const idx = STATE.runLog.length - 1 - i;
+      const pace = calcPace(r.distance, r.time);
       html += `<div style="background:#0f172a;border:1px solid #1e293b;border-radius:10px;padding:12px 16px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center">`;
-      html += `<div><div style="font-size:13px;color:#94a3b8">${r.date}</div><div style="font-size:15px;color:#f8fafc;margin-top:2px">${r.distance} miles${r.time ? ' · ' + r.time : ''}</div>${r.notes ? `<div style="font-size:12px;color:#475569;margin-top:2px">${r.notes}</div>` : ''}</div>`;
+      html += `<div>
+        <div style="font-size:13px;color:#94a3b8">${r.date}</div>
+        <div style="font-size:15px;color:#f8fafc;margin-top:2px">${r.distance} miles${r.time ? ' · ' + r.time : ''}${pace ? ` <span style="color:#4ade80;font-size:13px">· ${pace}</span>` : ''}</div>
+        ${r.notes ? `<div style="font-size:12px;color:#475569;margin-top:2px">${r.notes}</div>` : ''}
+      </div>`;
       html += `<div style="display:flex;align-items:center;gap:8px"><span style="font-size:22px">🏃</span><button onclick="deleteRun(${idx})" style="background:none;border:1px solid #334155;color:#475569;border-radius:4px;padding:4px 8px;font-size:11px;cursor:pointer">✕</button></div></div>`;
     });
     html += `<div style="background:#0f172a;border:1px solid #1e293b;border-radius:10px;padding:16px;margin-top:8px"><div style="font-size:12px;color:#4ade80">Total miles logged: ${total}</div></div>`;
@@ -674,13 +701,13 @@ function render() {
     const email = window.MarathonAuth.currentUser.email;
     const truncatedEmail = email.length > 18 ? email.substring(0, 16) + '...' : email;
     syncBtnHtml = `
-      <button class="sync-btn connected" onclick="window.MarathonAuth.showSyncModal()">
+      <button id="sync-btn" class="sync-btn connected" onclick="window.MarathonAuth.showSyncModal()">
         <span class="syncing-dot"></span> Cloud Active (${truncatedEmail})
       </button>
     `;
   } else {
     syncBtnHtml = `
-      <button class="sync-btn" onclick="window.MarathonAuth.showSyncModal()">
+      <button id="sync-btn" class="sync-btn" onclick="window.MarathonAuth.showSyncModal()">
         ☁ Connect Cloud Sync
       </button>
     `;
@@ -688,7 +715,7 @@ function render() {
 
   // Profile Custom button
   const profBtnHtml = `
-    <button class="sync-btn" style="border-color:#334155;color:#94a3b8;" onclick="window.MarathonProfile.showProfileModal()">
+    <button id="profile-btn" class="sync-btn" style="border-color:#334155;color:#94a3b8;" onclick="window.MarathonProfile.showProfileModal()">
       👤 ${profile.name}
     </button>
   `;
@@ -785,6 +812,18 @@ function toggleMilestone(i) {
 
 function updateLogForm(k, v) {
   STATE.logForm[k] = v;
+}
+
+function updatePacePreview() {
+  const dist = document.getElementById('lf_dist') ? document.getElementById('lf_dist').value : STATE.logForm.distance;
+  const time = document.getElementById('lf_time') ? document.getElementById('lf_time').value : STATE.logForm.time;
+  const pace = calcPace(dist, time);
+  const previewEl = document.getElementById('pace-preview');
+  if (previewEl) {
+    previewEl.innerHTML = pace
+      ? `<div style="background:#0a1f12;border:1px solid #4ade8033;border-radius:6px;padding:8px 12px;font-size:13px;color:#4ade80;text-align:center;margin-bottom:10px">⚡ Calculated pace: <strong>${pace}</strong></div>`
+      : '';
+  }
 }
 
 function addRun() {

@@ -194,21 +194,34 @@ const MarathonAuth = {
 document.addEventListener("DOMContentLoaded", () => {
   if (window.isFirebaseConfigured) {
     firebase.auth().onAuthStateChanged((user) => {
+      const wasLoggedOut = !MarathonAuth.currentUser;
       MarathonAuth.currentUser = user;
       MarathonAuth.updateModalUI();
-      
+
       // Notify DB sync layer to load user data or revert to offline mode
       if (window.MarathonDB && typeof window.MarathonDB.handleUserChange === 'function') {
         window.MarathonDB.handleUserChange(user);
       }
-      
+
       // Rerender app interface to show corrected Sync Button state
       if (typeof render === 'function') {
         render();
       }
+
+      // If user just logged in (transition from logged-out to logged-in):
+      // 1. Check if profile still needs to be completed (new account user)
+      // 2. Otherwise show the tour if they haven't suppressed it
+      if (user && wasLoggedOut) {
+        setTimeout(function() {
+          if (window.MarathonOnboarding && MarathonOnboarding.isIncomplete()) {
+            MarathonOnboarding.maybeShow();
+          } else if (window.MarathonTour && MarathonTour.shouldShow()) {
+            MarathonTour.show();
+          }
+        }, 600);
+      }
     });
   } else {
-    // Make sure modal operates in "Offline Setup Guide" mode
     MarathonAuth.updateModalUI();
   }
 });

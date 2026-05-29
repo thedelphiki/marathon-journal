@@ -459,3 +459,124 @@ svg rect:hover {
   .ob-choice-cards { grid-template-columns: 1fr; }
   .ob-modal { padding: 24px 18px 20px; }
 }
+
+/* ── GUIDED TOUR ──────────────────────────────────────────────── */
+#tour-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  pointer-events: none;
+}
+
+.tour-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 8, 20, 0.82);
+  pointer-events: all;
+}
+
+.tour-spotlight {
+  position: absolute;
+  border-radius: 8px;
+  box-shadow: 0 0 0 9999px rgba(5, 8, 20, 0.82);
+  border: 2px solid #4ade80;
+  pointer-events: none;
+  z-index: 2001;
+  transition: all 0.25s ease;
+}
+
+.tour-card {
+  background: #0f172a;
+  border: 1px solid #4ade8055;
+  border-radius: 14px;
+  padding: 22px 20px 16px;
+  width: calc(100vw - 40px);
+  max-width: 380px;
+  z-index: 2002;
+  pointer-events: all;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.6);
+}
+
+.tour-progress-bar {
+  height: 3px;
+  background: #1e293b;
+  border-radius: 2px;
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+
+.tour-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4ade80, #22c55e);
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.tour-step-count {
+  font-size: 11px;
+  color: #475569;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+.tour-title {
+  font-size: 16px;
+  font-weight: normal;
+  color: #f8fafc;
+  margin: 0 0 8px;
+  font-family: Georgia, serif;
+}
+
+.tour-body {
+  font-size: 13px;
+  color: #94a3b8;
+  line-height: 1.6;
+  margin: 0 0 18px;
+}
+
+.tour-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.tour-left-actions, .tour-right-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.tour-btn {
+  border: none;
+  border-radius: 7px;
+  padding: 9px 16px;
+  font-size: 13px;
+  font-family: Georgia, serif;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.tour-btn:hover { opacity: 0.85; }
+
+.tour-btn-primary {
+  background: #4ade80;
+  color: #0a0f1a;
+  font-weight: bold;
+}
+
+.tour-btn-ghost {
+  background: #1e293b;
+  color: #94a3b8;
+  border: 1px solid #334155;
+}
+
+.tour-dont-show {
+  font-size: 12px;
+  color: #475569;
+  border-top: 1px solid #1e293b;
+  padding-top: 12px;
+}
