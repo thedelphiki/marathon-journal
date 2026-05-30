@@ -91,21 +91,56 @@ const MarathonOnboarding = {
     raceDefault.setDate(today.getDate() + 47 * 7);
     const raceDateStr = raceDefault.toISOString().split('T')[0];
 
+    // Default selections
+    const defRest    = this._draft.restDays    || ['Thursday','Saturday'];
+    const defRun     = this._draft.runDays     || ['Sunday','Tuesday','Wednesday'];
+    const defWorkout = this._draft.workoutDays || ['Monday','Friday'];
+
+    const shorts = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+    const fulls  = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+
+    const dayRow = (idPrefix, selectedDays, color) => shorts.map((d,i) => {
+      const full   = fulls[i];
+      const active = selectedDays.includes(full);
+      return `<button type="button"
+        onclick="MarathonOnboarding.toggleDay('${idPrefix}','${full}',this)"
+        data-day="${full}" data-picker="${idPrefix}"
+        style="flex:1;min-width:0;aspect-ratio:1;border-radius:50%;
+          border:2px solid ${active ? color : '#334155'};
+          background:${active ? color+'22' : 'transparent'};
+          color:${active ? color : '#475569'};font-size:11px;cursor:pointer;
+          font-family:system-ui,sans-serif;transition:all 0.15s;
+          font-weight:${active ? 'bold' : 'normal'};padding:0;line-height:1"
+      >${d}</button>`;
+    }).join('');
+
+    const pickerBlock = (idPrefix, label, hint, selectedDays, color) => `
+      <div class="ob-field" style="grid-column:1/-1;margin-top:6px">
+        <label class="ob-label" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <span>${label}</span>
+          <span style="color:#475569;font-size:10px;text-transform:none;letter-spacing:0;font-weight:normal">${hint}</span>
+        </label>
+        <div style="display:flex;gap:5px;width:100%" id="ob-${idPrefix}-picker">
+          ${dayRow(idPrefix, selectedDays, color)}
+        </div>
+        <input type="hidden" id="ob-${idPrefix}-days" value='${JSON.stringify(selectedDays)}'>
+      </div>`;
+
     this._render(`
       <div class="ob-header">
         <div class="ob-logo">📋</div>
         <h1 class="ob-title">Your Training Plan</h1>
-        <p class="ob-sub">Tell us where you're starting and where you want to go.</p>
+        <p class="ob-sub">Tell us your pace, schedule, and goals.</p>
       </div>
       <form onsubmit="MarathonOnboarding.submitStep2(event)">
         <div class="ob-grid">
           <div class="ob-field">
             <label class="ob-label">Current Easy Pace (min/mi)</label>
-            <input type="text" id="ob-easyPace" class="ob-input" placeholder="13:00" value="13:00" required>
+            <input type="text" id="ob-easyPace" class="ob-input" placeholder="13:00" value="${this._draft.currentEasyPace||'13:00'}" required>
           </div>
           <div class="ob-field">
             <label class="ob-label">Target Marathon Pace</label>
-            <input type="text" id="ob-racePace" class="ob-input" placeholder="09:55" value="09:55" required>
+            <input type="text" id="ob-racePace" class="ob-input" placeholder="09:55" value="${this._draft.targetMarathonPace||'09:55'}" required>
           </div>
           <div class="ob-field">
             <label class="ob-label">Training Start Date</label>
@@ -133,27 +168,17 @@ const MarathonOnboarding = {
               <option value="gluten-free">Gluten-Free</option>
             </select>
           </div>
-          <div class="ob-field" style="grid-column:1/-1">
-            <label class="ob-label" style="margin-bottom:8px;display:block">Rest Days <span style="color:#475569;font-size:10px;text-transform:none;letter-spacing:0">(tap days you can't train — max 3)</span></label>
-            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px" id="ob-rest-picker">
-              ${['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map((d,i)=>{
-                const full=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'][i];
-                const active=['Thursday','Saturday'].includes(full);
-                return `<button type="button" onclick="MarathonOnboarding.toggleRestDay('${full}',this)"
-                  data-day="${full}"
-                  style="width:42px;height:42px;border-radius:50%;border:2px solid ${active?'#4ade80':'#334155'};
-                  background:${active?'rgba(74,222,128,0.15)':'transparent'};
-                  color:${active?'#4ade80':'#64748b'};font-size:11px;cursor:pointer;
-                  font-family:system-ui,sans-serif;transition:all 0.15s;font-weight:${active?'bold':'normal'}"
-                >${d}</button>`;
-              }).join('')}
-            </div>
-            <input type="hidden" id="ob-restDays" value='["Thursday","Saturday"]'>
-          </div>
-          <div style="display:flex;gap:10px;margin-top:4px;grid-column:1/-1">
+          ${pickerBlock('rest',    'Rest Days',    'max 3 · days you cannot train', defRest,    '#60a5fa')}
+          ${pickerBlock('run',     'Run Days',     'max 4 · easy, tempo & long run', defRun,     '#4ade80')}
+          ${pickerBlock('workout', 'Workout Days', 'max 3 · upper & lower body',    defWorkout, '#a78bfa')}
+          <p style="font-size:11px;color:#475569;grid-column:1/-1;margin-top:4px;line-height:1.5">
+            Selecting a day in one row greys it out in the others. Unassigned days become rest.
+          </p>
+          <div style="display:flex;gap:10px;grid-column:1/-1;margin-top:6px">
             <button type="button" class="ob-btn ob-btn-back" onclick="MarathonOnboarding.showStep1()">← Back</button>
             <button type="submit" class="ob-btn">Continue →</button>
           </div>
+        </div>
       </form>
       <div class="ob-step-dots">
         <span class="ob-dot"></span>
@@ -161,10 +186,13 @@ const MarathonOnboarding = {
         <span class="ob-dot"></span>
       </div>
     `);
+    // Sync cross-greying on load
+    setTimeout(() => MarathonOnboarding._syncPickerButtons(), 0);
   },
 
   submitStep2: function(e) {
     e.preventDefault();
+    const getJSON = (id, def) => { try { return JSON.parse(document.getElementById(id)?.value || def); } catch(e) { return JSON.parse(def); } };
     this._draft = {
       ...this._draft,
       currentEasyPace:    document.getElementById('ob-easyPace').value.trim(),
@@ -173,32 +201,74 @@ const MarathonOnboarding = {
       raceDate:           document.getElementById('ob-race').value,
       climate:            document.getElementById('ob-climate').value,
       diet:               document.getElementById('ob-diet').value,
-      restDays:           JSON.parse(document.getElementById('ob-restDays').value || '["Thursday","Saturday"]'),
+      restDays:           getJSON('ob-rest-days',    '["Thursday","Saturday"]'),
+      runDays:            getJSON('ob-run-days',     '["Sunday","Tuesday","Wednesday"]'),
+      workoutDays:        getJSON('ob-workout-days', '["Monday","Friday"]'),
     };
     this.showStep3();
   },
 
-  toggleRestDay: function(day, btn) {
-    const input = document.getElementById('ob-restDays');
+  toggleDay: function(pickerPrefix, day, btn) {
+    const input = document.getElementById(`ob-${pickerPrefix}-days`);
+    if (!input) return;
     let days = JSON.parse(input.value || '[]');
-    if (days.includes(day)) {
+    const isActive = days.includes(day);
+    const maxes = { rest:3, run:4, workout:3 };
+    if (isActive) {
       days = days.filter(d => d !== day);
-      btn.style.borderColor = '#334155';
-      btn.style.background = 'transparent';
-      btn.style.color = '#64748b';
-      btn.style.fontWeight = 'normal';
+      input.value = JSON.stringify(days);
     } else {
-      if (days.length >= 3) return;
+      if (days.length >= (maxes[pickerPrefix]||3)) return;
+      // Block if claimed by another picker
+      for (const other of ['rest','run','workout']) {
+        if (other === pickerPrefix) continue;
+        const o = document.getElementById(`ob-${other}-days`);
+        if (o && JSON.parse(o.value||'[]').includes(day)) return;
+      }
       days.push(day);
-      btn.style.borderColor = '#4ade80';
-      btn.style.background = 'rgba(74,222,128,0.15)';
-      btn.style.color = '#4ade80';
-      btn.style.fontWeight = 'bold';
+      input.value = JSON.stringify(days);
     }
-    input.value = JSON.stringify(days);
+    this._syncPickerButtons();
   },
 
-  // ── STEP 3: Account or Guest ───────────────────────────────────
+  _syncPickerButtons: function() {
+    const colors = { rest:'#60a5fa', run:'#4ade80', workout:'#a78bfa' };
+    const claimed = {};
+    ['rest','run','workout'].forEach(p => {
+      const inp = document.getElementById(`ob-${p}-days`);
+      if (!inp) return;
+      JSON.parse(inp.value||'[]').forEach(d => { claimed[d] = p; });
+    });
+    ['rest','run','workout'].forEach(p => {
+      const picker = document.getElementById(`ob-${p}-picker`);
+      if (!picker) return;
+      const owned = JSON.parse(document.getElementById(`ob-${p}-days`)?.value||'[]');
+      const color = colors[p];
+      picker.querySelectorAll('button[data-day]').forEach(btn => {
+        const day = btn.dataset.day;
+        const isOwned   = owned.includes(day);
+        const isClaimed = claimed[day] && claimed[day] !== p;
+        if (isOwned) {
+          btn.style.borderColor = color; btn.style.background = color+'22';
+          btn.style.color = color; btn.style.fontWeight = 'bold';
+          btn.style.opacity = '1'; btn.style.cursor = 'pointer';
+        } else if (isClaimed) {
+          btn.style.borderColor = '#1e293b'; btn.style.background = '#060a12';
+          btn.style.color = '#1e293b'; btn.style.fontWeight = 'normal';
+          btn.style.opacity = '0.35'; btn.style.cursor = 'not-allowed';
+        } else {
+          btn.style.borderColor = '#334155'; btn.style.background = 'transparent';
+          btn.style.color = '#475569'; btn.style.fontWeight = 'normal';
+          btn.style.opacity = '1'; btn.style.cursor = 'pointer';
+        }
+      });
+    });
+  },
+
+  // (old toggleRestDay kept for safety but no longer used)
+  toggleRestDay: function(day, btn) {},
+
+    // ── STEP 3: Account or Guest ───────────────────────────────────
   showStep3: function() {
     const firebaseReady = window.isFirebaseConfigured;
     this._render(`

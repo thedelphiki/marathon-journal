@@ -323,56 +323,32 @@ const DAY_TYPES = {
 };
 
 function generateWeekSchedule() {
-  const profile = window.MarathonProfile ? window.MarathonProfile.state : {};
-  const restDays = profile.restDays && profile.restDays.length
-    ? profile.restDays
-    : ['Thursday', 'Saturday'];
+  const profile     = window.MarathonProfile ? window.MarathonProfile.state : {};
+  const restDays    = (profile.restDays    && profile.restDays.length)    ? profile.restDays    : ['Thursday','Saturday'];
+  const runDays     = (profile.runDays     && profile.runDays.length)     ? profile.runDays     : ['Tuesday','Wednesday','Sunday'];
+  const workoutDays = (profile.workoutDays && profile.workoutDays.length) ? profile.workoutDays : ['Monday','Friday'];
 
-  // Workout pool to assign to active days — in a smart order
-  // Priority: long run on best available day, then easy runs, then calisthenics
-  const workoutPool = ['longRun', 'easyRun', 'tempoRun', 'upperBody', 'lowerCore', 'easyRun'];
-
-  // Preferred day ordering for workout types
-  const longRunPreference  = ['Sunday','Saturday','Monday','Tuesday','Wednesday','Thursday','Friday'];
-  const tempoPreference    = ['Tuesday','Wednesday','Thursday','Monday','Friday'];
-  const easyPreference     = ['Tuesday','Wednesday','Monday','Thursday','Friday'];
-
-  // Build list of active (non-rest) days
-  const activeDays = ALL_DAYS.filter(d => !restDays.includes(d));
-
-  // Assign workout types to active days
   const assignments = {};
-  ALL_DAYS.forEach(d => {
-    assignments[d] = restDays.includes(d) ? 'rest' : null;
+  ALL_DAYS.forEach(d => { assignments[d] = 'rest'; });
+
+  // Assign run types — last run day gets long run, second-to-last gets tempo, rest get easy
+  const sortedRun = ALL_DAYS.filter(d => runDays.includes(d));
+  sortedRun.forEach((d, i) => {
+    if (i === sortedRun.length - 1) assignments[d] = 'longRun';
+    else if (i === sortedRun.length - 2 && sortedRun.length > 1) assignments[d] = 'tempoRun';
+    else assignments[d] = 'easyRun';
   });
 
-  // Assign long run first — find best non-rest day by preference
-  for (const pref of longRunPreference) {
-    if (assignments[pref] === null) { assignments[pref] = 'longRun'; break; }
-  }
+  // Assign calisthenics — alternate upper/lower body
+  const sortedWork = ALL_DAYS.filter(d => workoutDays.includes(d));
+  sortedWork.forEach((d, i) => { assignments[d] = i % 2 === 0 ? 'upperBody' : 'lowerCore'; });
 
-  // Assign tempo run
-  for (const pref of tempoPreference) {
-    if (assignments[pref] === null) { assignments[pref] = 'tempoRun'; break; }
-  }
+  // Rest days override everything
+  restDays.forEach(d => { assignments[d] = 'rest'; });
 
-  // Assign easy runs and calisthenics to remaining days
-  const remaining = ALL_DAYS.filter(d => assignments[d] === null);
-  // Alternate: easy, upper, easy, lower, easy...
-  const fillOrder = ['easyRun','upperBody','easyRun','lowerCore','easyRun','upperBody'];
-  remaining.forEach((d, i) => {
-    assignments[d] = fillOrder[i % fillOrder.length];
-  });
-
-  // Build final schedule
   return ALL_DAYS.map(dayName => {
     const typeKey = assignments[dayName] || 'rest';
-    const template = DAY_TYPES[typeKey];
-    return {
-      day: dayName,
-      typeKey,
-      ...template,
-    };
+    return { day: dayName, typeKey, ...DAY_TYPES[typeKey] };
   });
 }
 
