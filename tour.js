@@ -20,7 +20,7 @@ const MarathonTour = {
     {
       title: "Tab Navigation 📋",
       body: "Use these tabs to move between sections of your journal. Each one keeps your data saved automatically.",
-      target: '.tab-bar',
+      target: '#tab-bar',
       tab: null,        // Don't switch tab — show the bar itself
       position: 'below'
     },
@@ -132,10 +132,13 @@ const MarathonTour = {
   },
 
   _getTabButtonTarget: function(tabLabel) {
-    // Find the actual tab button by its text content
-    const buttons = document.querySelectorAll('.tab-bar button');
-    for (const btn of buttons) {
-      if (btn.textContent.trim() === tabLabel) return btn;
+    // Find tab button by data-label attribute (set during render)
+    const btn = document.querySelector(`[data-label="${tabLabel}"]`);
+    if (btn) return btn;
+    // Fallback: search by text content
+    const all = document.querySelectorAll('#tab-bar button');
+    for (const b of all) {
+      if (b.textContent.trim().includes(tabLabel)) return b;
     }
     return null;
   },
@@ -150,9 +153,11 @@ const MarathonTour = {
       this._switchTab(step.tabTarget);
     }
 
-    // After tab switch, wait one frame for DOM to update before measuring
+    // Double rAF: first lets render() finish, second lets paint complete
     requestAnimationFrame(() => {
-      this._renderStepDOM(step, overlay);
+      requestAnimationFrame(() => {
+        this._renderStepDOM(step, overlay);
+      });
     });
   },
 

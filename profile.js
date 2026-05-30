@@ -14,6 +14,8 @@ const MarathonProfile = {
     targetMarathonPace: "10:00",
     diet: "none",
     climate: "moderate",
+    restDays: ["Thursday", "Saturday"],
+    restDays: ["Thursday", "Saturday"],
     startDate: new Date().toISOString().split('T')[0],
     raceDate: new Date(Date.now() + 47 * 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
   },
@@ -223,6 +225,24 @@ const MarathonProfile = {
               <input type="date" id="prof-race" class="auth-input" value="${this.state.raceDate}" required>
             </div>
           </div>
+
+          <div class="auth-group" style="margin-top:12px">
+            <label class="auth-label" style="margin-bottom:10px;display:block">Rest Days <span style="color:#475569;font-size:11px;text-transform:none;letter-spacing:0">(select 1–3 days — workouts fill the rest)</span></label>
+            <div style="display:flex;gap:8px;flex-wrap:wrap" id="rest-day-picker">
+              ${['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map((d, i) => {
+                const full = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'][i];
+                const active = (this.state.restDays || []).includes(full);
+                return `<button type="button" onclick="MarathonProfile.toggleRestDay('${full}',this)"
+                  data-day="${full}"
+                  style="width:42px;height:42px;border-radius:50%;border:2px solid ${active?'#4ade80':'#334155'};
+                  background:${active?'rgba(74,222,128,0.15)':'#060a12'};
+                  color:${active?'#4ade80':'#64748b'};font-size:11px;cursor:pointer;
+                  font-family:system-ui,sans-serif;transition:all 0.15s;font-weight:${active?'bold':'normal'}"
+                >${d}</button>`;
+              }).join('')}
+            </div>
+            <input type="hidden" id="prof-restDays" value="${JSON.stringify(this.state.restDays || ['Thursday','Saturday'])}">
+          </div>
           
           <button type="submit" class="auth-btn" style="margin-top: 20px;">Save Profile</button>
         </form>
@@ -230,6 +250,26 @@ const MarathonProfile = {
     `;
     
     overlay.classList.add('active');
+  },
+
+  toggleRestDay: function(day, btn) {
+    const input = document.getElementById('prof-restDays');
+    let days = JSON.parse(input.value || '[]');
+    if (days.includes(day)) {
+      days = days.filter(d => d !== day);
+      btn.style.borderColor = '#334155';
+      btn.style.background = '#060a12';
+      btn.style.color = '#64748b';
+      btn.style.fontWeight = 'normal';
+    } else {
+      if (days.length >= 3) return; // max 3 rest days
+      days.push(day);
+      btn.style.borderColor = '#4ade80';
+      btn.style.background = 'rgba(74,222,128,0.15)';
+      btn.style.color = '#4ade80';
+      btn.style.fontWeight = 'bold';
+    }
+    input.value = JSON.stringify(days);
   },
 
   hideProfileModal: function() {
@@ -252,6 +292,7 @@ const MarathonProfile = {
       targetMarathonPace: document.getElementById('prof-racePace').value.trim(),
       diet: document.getElementById('prof-diet').value,
       climate: document.getElementById('prof-climate').value,
+      restDays: JSON.parse(document.getElementById('prof-restDays').value || '["Thursday","Saturday"]'),
       startDate: document.getElementById('prof-start').value,
       raceDate: document.getElementById('prof-race').value
     };

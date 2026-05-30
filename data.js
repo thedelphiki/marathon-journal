@@ -386,3 +386,124 @@ const PULLUP_PROG = [
   { week: '17–20', reps: '8–10 pull-ups × 4 sets + L-sit holds' },
   { week: '21+', reps: '10–15 pull-ups × 5 sets — weighted optional' },
 ];
+
+// ── WORKOUT TYPE DEFINITIONS ──────────────────────────────────────
+// The pool of workout types that get assigned to non-rest days.
+// Order matters: Easy Run, Upper Body, Tempo Run, Lower/Core, Long Run
+const WORKOUT_POOL = [
+  {
+    type: 'RUN – Easy Pace',
+    emoji: '🏃',
+    color: '#4ade80',
+    tasks: [
+      'Pre-run snack 30–45 min before (banana or toast + PB)',
+      'Electrolyte drink before & after',
+      'Easy conversational pace — Phase 1: 2–3mi | Phase 2: 3–5mi | Phase 3: 5–7mi',
+      'Log distance, pace & how you felt in the Run Log tab',
+      'Post-run: 15 min stretch (calves, quads, hip flexors)',
+    ]
+  },
+  {
+    type: 'CALISTHENICS – Upper Body',
+    emoji: '💪',
+    color: '#7c3aed',
+    tasks: [
+      'Warm-up: 5 min jumping jacks + arm circles',
+      'Push-ups: 3 sets (see progression table in Guide tab)',
+      'Pike push-ups: 3×10',
+      'Diamond push-ups: 3×8',
+      'Doorframe rows or inverted rows: 3×10',
+      'Plank hold: 3×45 sec (build to 3×2 min over time)',
+      'Pull-up negatives or assisted pull-ups: 3×5 (build to 3×10 full)',
+      'Cool-down stretch: 10 min',
+    ]
+  },
+  {
+    type: 'RUN – Intervals / Tempo',
+    emoji: '⚡',
+    color: '#f97316',
+    tasks: [
+      'Pre-run snack + electrolytes 30–45 min before',
+      'Warm-up: 5–10 min easy jog',
+      'Phase 1: 6×400m with 90s rest | Phase 2: Mile repeats | Phase 3: Tempo runs',
+      'Cool-down: 5–10 min easy jog + walk',
+      'Log splits & perceived effort in Run Log tab',
+      'Post-run nutrition within 30 min (carbs + protein)',
+    ]
+  },
+  {
+    type: 'CALISTHENICS – Core & Lower',
+    emoji: '🔥',
+    color: '#ea580c',
+    tasks: [
+      'Warm-up: 5 min light cardio (jumping jacks or jog in place)',
+      'Bodyweight squats: 3×20',
+      'Reverse lunges: 3×12 each leg',
+      'Glute bridges: 3×20',
+      'Dead bugs: 3×10 each side',
+      'Bicycle crunches: 3×20',
+      'Mountain climbers: 3×30 sec',
+      'Superman holds: 3×10',
+      'Cool-down & stretch: 10 min',
+    ]
+  },
+  {
+    type: 'LONG RUN',
+    emoji: '🌅',
+    color: '#a78bfa',
+    tasks: [
+      'Full meal 2 hrs before OR light snack 45 min before',
+      'Carry electrolytes and water for the full run',
+      'Phase 1: 4–5mi easy | Phase 2: 8–12mi | Phase 3: 14–20mi',
+      'Run/walk intervals if needed (9 min run : 1 min walk)',
+      'Carry 1–2 gels or chews for runs over 60 min (every 45 min)',
+      'Log total distance, time, and avg pace',
+      'Recovery meal within 30–45 min (chocolate milk or protein + carbs)',
+      'Ice legs or elevate for 20 min after',
+    ]
+  },
+];
+
+const REST_DAY_TEMPLATE = {
+  type: 'REST + Mobility',
+  emoji: '🧘',
+  color: '#60a5fa',
+  tasks: [
+    '10 min morning stretch: hip flexors, calves, hamstrings, quads',
+    'Foam roll: IT band, quads, glutes, calves',
+    'Hydrate with electrolytes throughout the day',
+    'Prep gear and pre-run snack for next workout day',
+    'Get 7–9 hours of sleep — recovery is training',
+  ]
+};
+
+const DAYS_OF_WEEK = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+/**
+ * Builds a 7-entry weekly template based on chosen rest days.
+ * restDays: array of day names e.g. ['Thursday','Saturday']
+ * The 5 workout types from WORKOUT_POOL are spread across the remaining days,
+ * always keeping the LONG RUN as far from the rest days as possible.
+ */
+function buildWeeklyTemplate(restDays) {
+  // Default to Mon + Thu rest if nothing provided
+  if (!restDays || restDays.length === 0) restDays = ['Monday','Thursday'];
+
+  // Start week on Monday
+  const weekOrder = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+  const activeDays = weekOrder.filter(d => !restDays.includes(d));
+
+  // We have 5 workout slots to fill from WORKOUT_POOL
+  // Spread them evenly; if more than 5 active days, extra days get easy runs
+  const assigned = {};
+  activeDays.forEach((day, i) => {
+    assigned[day] = WORKOUT_POOL[i % WORKOUT_POOL.length];
+  });
+
+  return weekOrder.map(day => {
+    if (restDays.includes(day)) {
+      return { day, ...REST_DAY_TEMPLATE };
+    }
+    return { day, ...assigned[day] };
+  });
+}

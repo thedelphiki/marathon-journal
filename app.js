@@ -230,20 +230,173 @@ function customizeMealItems(items) {
   });
 }
 
-// ── TASK STATE HELPER ──
+// ── DYNAMIC WEEK SCHEDULE ──────────────────────────────────────────
+// Generates a 7-day schedule based on the user's chosen rest days.
+// Remaining days are filled with runs and calisthenics intelligently.
+
+const ALL_DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+
+const DAY_TYPES = {
+  rest: {
+    type: 'REST + Mobility', emoji: '🧘', color: '#60a5fa',
+    tasks: [
+      '10 min morning stretch: hip flexors, calves, hamstrings, quads',
+      'Foam roll: IT band, quads, glutes, calves',
+      'Hydrate with electrolytes throughout the day',
+      'Prep run gear and snack for your next run day',
+      'Get 7–9 hours of sleep — recovery is training',
+    ]
+  },
+  easyRun: {
+    type: 'RUN – Easy Pace', emoji: '🏃', color: '#4ade80',
+    tasks: [
+      'Pre-run snack 30–45 min before (banana or toast + PB)',
+      'Electrolyte drink before & after',
+      'Easy conversational pace — Phase 1: 2–3mi | Phase 2: 3–5mi | Phase 3: 5–7mi',
+      'Log distance, pace & how you felt in the Run Log tab',
+      'Post-run: 15 min stretch (calves, quads, hip flexors)',
+    ]
+  },
+  tempoRun: {
+    type: 'RUN – Intervals / Tempo', emoji: '⚡', color: '#f97316',
+    tasks: [
+      'Pre-run snack + electrolytes 30–45 min before',
+      'Warm-up: 5–10 min easy jog',
+      'Phase 1: 6×400m with 90s rest | Phase 2: Mile repeats | Phase 3: Tempo runs',
+      'Cool-down: 5–10 min easy jog + walk',
+      'Log splits & perceived effort in Run Log tab',
+      'Post-run nutrition within 30 min (carbs + protein)',
+    ]
+  },
+  longRun: {
+    type: 'LONG RUN', emoji: '🌅', color: '#a78bfa',
+    tasks: [
+      'Full meal 2 hrs before OR light snack 45 min before',
+      'Carry electrolytes and water for the full run',
+      'Phase 1: 4–5mi easy | Phase 2: 8–12mi | Phase 3: 14–20mi',
+      'Run/walk intervals if needed (9 min run : 1 min walk)',
+      'Carry 1–2 gels or chews for runs over 60 min (every 45 min)',
+      'Log total distance, time, and avg pace',
+      'Recovery meal within 30–45 min (chocolate milk or protein + carbs)',
+      'Ice legs or elevate for 20 min after',
+    ]
+  },
+  upperBody: {
+    type: 'CALISTHENICS – Upper Body', emoji: '💪', color: '#7c3aed',
+    tasks: [
+      'Warm-up: 5 min jumping jacks + arm circles',
+      'Push-ups: 3 sets (see progression table in Guide tab)',
+      'Pike push-ups: 3×10',
+      'Diamond push-ups: 3×8',
+      'Doorframe rows or inverted rows: 3×10',
+      'Plank hold: 3×45 sec (build to 3×2 min over time)',
+      'Pull-up negatives or assisted pull-ups: 3×5 (build to 3×10 full)',
+      'Cool-down stretch: 10 min',
+    ]
+  },
+  lowerCore: {
+    type: 'CALISTHENICS – Core & Lower', emoji: '🔥', color: '#ea580c',
+    tasks: [
+      'Warm-up: 5 min light cardio (jumping jacks or jog in place)',
+      'Bodyweight squats: 3×20',
+      'Reverse lunges: 3×12 each leg',
+      'Glute bridges: 3×20',
+      'Dead bugs: 3×10 each side',
+      'Bicycle crunches: 3×20',
+      'Mountain climbers: 3×30 sec',
+      'Superman holds: 3×10',
+      'Cool-down & stretch: 10 min',
+    ]
+  },
+  trueRest: {
+    type: 'TRUE REST', emoji: '🥗', color: '#22d3ee',
+    tasks: [
+      'Complete rest — no running, no calisthenics today',
+      'Optional light walk only if legs feel good (20 min max)',
+      'Meal prep for the week (see Meals tab for the Sunday checklist)',
+      'Batch cook: brown rice, quinoa, or sweet potatoes',
+      'Prep protein sources: grill chicken, hard-boil eggs',
+      "Review last week's progress and plan the week ahead",
+      'Celebrate your progress — you earned this rest',
+    ]
+  }
+};
+
+function generateWeekSchedule() {
+  const profile = window.MarathonProfile ? window.MarathonProfile.state : {};
+  const restDays = profile.restDays && profile.restDays.length
+    ? profile.restDays
+    : ['Thursday', 'Saturday'];
+
+  // Workout pool to assign to active days — in a smart order
+  // Priority: long run on best available day, then easy runs, then calisthenics
+  const workoutPool = ['longRun', 'easyRun', 'tempoRun', 'upperBody', 'lowerCore', 'easyRun'];
+
+  // Preferred day ordering for workout types
+  const longRunPreference  = ['Sunday','Saturday','Monday','Tuesday','Wednesday','Thursday','Friday'];
+  const tempoPreference    = ['Tuesday','Wednesday','Thursday','Monday','Friday'];
+  const easyPreference     = ['Tuesday','Wednesday','Monday','Thursday','Friday'];
+
+  // Build list of active (non-rest) days
+  const activeDays = ALL_DAYS.filter(d => !restDays.includes(d));
+
+  // Assign workout types to active days
+  const assignments = {};
+  ALL_DAYS.forEach(d => {
+    assignments[d] = restDays.includes(d) ? 'rest' : null;
+  });
+
+  // Assign long run first — find best non-rest day by preference
+  for (const pref of longRunPreference) {
+    if (assignments[pref] === null) { assignments[pref] = 'longRun'; break; }
+  }
+
+  // Assign tempo run
+  for (const pref of tempoPreference) {
+    if (assignments[pref] === null) { assignments[pref] = 'tempoRun'; break; }
+  }
+
+  // Assign easy runs and calisthenics to remaining days
+  const remaining = ALL_DAYS.filter(d => assignments[d] === null);
+  // Alternate: easy, upper, easy, lower, easy...
+  const fillOrder = ['easyRun','upperBody','easyRun','lowerCore','easyRun','upperBody'];
+  remaining.forEach((d, i) => {
+    assignments[d] = fillOrder[i % fillOrder.length];
+  });
+
+  // Build final schedule
+  return ALL_DAYS.map(dayName => {
+    const typeKey = assignments[dayName] || 'rest';
+    const template = DAY_TYPES[typeKey];
+    return {
+      day: dayName,
+      typeKey,
+      ...template,
+    };
+  });
+}
+
+// Get the current week's schedule (cached per render)
+function getWeekSchedule() {
+  return generateWeekSchedule();
+}
+
+// ── TASK STATE HELPERS (updated to use dynamic schedule) ──────────
 function isChecked(di, ti) {
   return !!STATE.checkedTasks[`w${STATE.week}-d${di}-t${ti}`];
 }
 
 function getDayProg(di) {
-  const t = WEEKLY_TEMPLATE[di].tasks;
+  const schedule = getWeekSchedule();
+  const t = schedule[di].tasks;
   const d = t.filter((_, ti) => isChecked(di, ti)).length;
   return {d, t: t.length};
 }
 
 function getWeekPct() {
+  const schedule = getWeekSchedule();
   let d = 0, t = 0;
-  WEEKLY_TEMPLATE.forEach((day, di) => day.tasks.forEach((_, ti) => {
+  schedule.forEach((day, di) => day.tasks.forEach((_, ti) => {
     t++;
     if (isChecked(di, ti)) d++;
   }));
@@ -414,7 +567,8 @@ function renderMileageChart(totalWeeks) {
 function renderWeekly() {
   const p = getPhase(STATE.week);
   const metrics = window.MarathonProfile ? window.MarathonProfile.getCalculatedMetrics() : {};
-  
+  const schedule = getWeekSchedule();
+
   let html = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
     <div>
       <h2 style="color:#4ade80;font-weight:normal;font-size:18px;margin:0">Week ${STATE.week} Training</h2>
@@ -422,23 +576,20 @@ function renderWeekly() {
     </div>
     <span style="font-size:12px;color:#94a3b8;background:${p.color}15;border:1px solid ${p.color}33;padding:4px 10px;border-radius:12px;">Phase: ${p.name}</span>
   </div>`;
-  
-  WEEKLY_TEMPLATE.forEach((day, di) => {
+
+  schedule.forEach((day, di) => {
     const pr = getDayProg(di);
     const done = pr.d === pr.t;
-    const isToday = false; // We can set target highlighting if desired
-    
-    // We rewrite splits inside the tasks list depending on calculated splits from profile.js
+
     const targetTasks = day.tasks.map(task => {
       let t = task;
       if (metrics.easyPace) {
         t = t.replace(/Phase 1: 2–3mi \| Phase 2: 3–5mi \| Phase 3: 5–7mi/gi, `Target Easy Pace: <strong>${metrics.easyPace}/mi</strong>`);
-        t = t.replace(/Phase 1: 6×400m w\/ 90s rest \| Phase 2: Mile repeats \| Phase 3: Tempo runs/gi, `Interval: <strong>${metrics.intervalPace}/mi</strong> | Tempo: <strong>${metrics.tempoPace}/mi</strong>`);
+        t = t.replace(/Phase 1: 6×400m with 90s rest \| Phase 2: Mile repeats \| Phase 3: Tempo runs/gi, `Interval: <strong>${metrics.intervalPace}/mi</strong> | Tempo: <strong>${metrics.tempoPace}/mi</strong>`);
       }
       return t;
     });
 
-    // Sleek HTML accordion component (Using Popover or pure details styling is extremely professional!)
     html += `
       <details style="background:${done ? 'rgba(74,222,128,0.02)' : '#0f172a'};border:1px solid ${done ? 'rgba(74,222,128,0.2)' : '#1e293b'};border-left:3px solid ${day.color};border-radius:10px;margin-bottom:12px;overflow:hidden;" ${di===0?'open':''}>
         <summary style="padding:14px 16px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;list-style:none;outline:none;">
@@ -454,7 +605,7 @@ function renderWeekly() {
             <span style="color:#475569;font-size:12px;">▼</span>
           </div>
         </summary>
-        <div style="padding:0 16px 14px;border-top:1px solid #1e293b;padding-top:12px;">
+        <div style="padding:12px 16px 14px;border-top:1px solid #1e293b;">
           ${targetTasks.map((task, ti) => {
             const chk = isChecked(di, ti);
             return `
@@ -712,7 +863,7 @@ function render() {
   ];
 
   const tabBtns = tabs.map(t => `
-    <button onclick="setTab('${t.id}')" style="
+    <button data-label="${t.label}" onclick="setTab('${t.id}')" style="
       flex:1;min-width:0;background:none;border:none;border-bottom:2px solid ${STATE.tab===t.id?'#4ade80':'transparent'};
       padding:8px 2px;cursor:pointer;color:${STATE.tab===t.id?'#4ade80':'#64748b'};
       display:flex;flex-direction:column;align-items:center;gap:2px;transition:color 0.2s;font-family:system-ui,sans-serif">
@@ -780,7 +931,7 @@ function render() {
   </div>
 
   <!-- TAB BAR -->
-  <div style="background:#0f172a;border-bottom:1px solid #1e293b;padding:0 8px">
+  <div id="tab-bar" style="background:#0f172a;border-bottom:1px solid #1e293b;padding:0 8px">
     <div style="max-width:700px;margin:0 auto;display:flex">${tabBtns}</div>
   </div>
 

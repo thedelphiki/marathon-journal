@@ -133,11 +133,27 @@ const MarathonOnboarding = {
               <option value="gluten-free">Gluten-Free</option>
             </select>
           </div>
-        </div>
-        <div style="display:flex;gap:10px;margin-top:20px">
-          <button type="button" class="ob-btn ob-btn-back" onclick="MarathonOnboarding.showStep1()">← Back</button>
-          <button type="submit" class="ob-btn">Continue →</button>
-        </div>
+          <div class="ob-field" style="grid-column:1/-1">
+            <label class="ob-label" style="margin-bottom:8px;display:block">Rest Days <span style="color:#475569;font-size:10px;text-transform:none;letter-spacing:0">(tap days you can't train — max 3)</span></label>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px" id="ob-rest-picker">
+              ${['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map((d,i)=>{
+                const full=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'][i];
+                const active=['Thursday','Saturday'].includes(full);
+                return `<button type="button" onclick="MarathonOnboarding.toggleRestDay('${full}',this)"
+                  data-day="${full}"
+                  style="width:42px;height:42px;border-radius:50%;border:2px solid ${active?'#4ade80':'#334155'};
+                  background:${active?'rgba(74,222,128,0.15)':'transparent'};
+                  color:${active?'#4ade80':'#64748b'};font-size:11px;cursor:pointer;
+                  font-family:system-ui,sans-serif;transition:all 0.15s;font-weight:${active?'bold':'normal'}"
+                >${d}</button>`;
+              }).join('')}
+            </div>
+            <input type="hidden" id="ob-restDays" value='["Thursday","Saturday"]'>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:4px;grid-column:1/-1">
+            <button type="button" class="ob-btn ob-btn-back" onclick="MarathonOnboarding.showStep1()">← Back</button>
+            <button type="submit" class="ob-btn">Continue →</button>
+          </div>
       </form>
       <div class="ob-step-dots">
         <span class="ob-dot"></span>
@@ -157,8 +173,29 @@ const MarathonOnboarding = {
       raceDate:           document.getElementById('ob-race').value,
       climate:            document.getElementById('ob-climate').value,
       diet:               document.getElementById('ob-diet').value,
+      restDays:           JSON.parse(document.getElementById('ob-restDays').value || '["Thursday","Saturday"]'),
     };
     this.showStep3();
+  },
+
+  toggleRestDay: function(day, btn) {
+    const input = document.getElementById('ob-restDays');
+    let days = JSON.parse(input.value || '[]');
+    if (days.includes(day)) {
+      days = days.filter(d => d !== day);
+      btn.style.borderColor = '#334155';
+      btn.style.background = 'transparent';
+      btn.style.color = '#64748b';
+      btn.style.fontWeight = 'normal';
+    } else {
+      if (days.length >= 3) return;
+      days.push(day);
+      btn.style.borderColor = '#4ade80';
+      btn.style.background = 'rgba(74,222,128,0.15)';
+      btn.style.color = '#4ade80';
+      btn.style.fontWeight = 'bold';
+    }
+    input.value = JSON.stringify(days);
   },
 
   // ── STEP 3: Account or Guest ───────────────────────────────────
