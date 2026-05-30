@@ -45,7 +45,7 @@ const MarathonTour = {
       body: "Four meal templates based on your day type — Run Day, Calisthenics, Rest, and Long Run. Tailored to your weight, climate, and dietary preference.",
       target: null,
       tabTarget: 'nutrition',
-      tabLabel: 'Meal Plan',
+      tabLabel: 'Meals',
       position: 'center'
     },
     {
@@ -53,7 +53,7 @@ const MarathonTour = {
       body: "Tap a milestone to check it off when you hit it. These are your long-range checkpoints, from your first 5K to race day.",
       target: null,
       tabTarget: 'milestones',
-      tabLabel: 'Milestones',
+      tabLabel: 'Goals',
       position: 'center'
     },
     {
@@ -81,7 +81,7 @@ const MarathonTour = {
     },
     {
       title: "Cloud Sync ☁️",
-      body: "Tap the sync button to log in. When signed in, every checkbox, run, and note saves instantly across all your devices.",
+      body: "The cloud icon sits below the gear button in the top-right corner. Tap it to log in or check your sync status. When signed in it glows green — every checkbox, run, and note saves instantly across all your devices.",
       target: '#sync-btn',
       tab: null,
       position: 'below'
@@ -199,8 +199,15 @@ const MarathonTour = {
         ${left/W*100}% ${top/H*100}%
       )`;
 
-      // Position card below the spotlight, centered
-      const cardTopPx = Math.min(bottom + 16, window.innerHeight - 260);
+      // Position card: below target normally, above if too close to bottom
+      const spaceBelow = window.innerHeight - bottom;
+      const cardHeight = 260;
+      let cardTopPx;
+      if (spaceBelow >= cardHeight + 16) {
+        cardTopPx = bottom + 16;
+      } else {
+        cardTopPx = Math.max(8, top - cardHeight - 16);
+      }
       cardStyle = `position:fixed;top:${cardTopPx}px;left:50%;transform:translateX(-50%);`;
     } else {
       clipPath = '';

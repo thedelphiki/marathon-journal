@@ -823,22 +823,22 @@ function render() {
   const metrics = window.MarathonProfile ? window.MarathonProfile.getCalculatedMetrics() : { totalWeeks: 47 };
   const totalWeeks = metrics.totalWeeks;
 
-  // Cloud sync badge — compact, no email
-  let syncBadge = '';
-  if (window.MarathonAuth && window.MarathonAuth.currentUser) {
-    syncBadge = `<button id="sync-btn" class="sync-badge connected" onclick="window.MarathonAuth.showSyncModal()"><span class="syncing-dot"></span> Cloud Active</button>`;
-  } else {
-    syncBadge = `<button id="sync-btn" class="sync-badge" onclick="window.MarathonAuth.showSyncModal()">☁ Sync</button>`;
-  }
+  // Cloud sync icon — lives inside gear wrapper, just a cloud icon
+  const syncIcon = window.MarathonAuth && window.MarathonAuth.currentUser
+    ? `<button id="sync-btn" onclick="window.MarathonAuth.showSyncModal()" title="Cloud Sync Active"
+        style="width:38px;height:38px;border-radius:50%;background:#0a1f12;border:1px solid #4ade8066;color:#4ade80;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.4)">☁</button>`
+    : `<button id="sync-btn" onclick="window.MarathonAuth.showSyncModal()" title="Connect Cloud Sync"
+        style="width:38px;height:38px;border-radius:50%;background:#1e293b;border:1px solid #334155;color:#64748b;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.4)">☁</button>`;
 
-  // Gear menu — fixed top-right corner
+  // Gear menu + sync icon — fixed top-right corner, stacked vertically
   const gearMenuHtml = `
-    <div id="gear-wrapper" style="position:fixed;top:12px;right:14px;z-index:600">
+    <div id="gear-wrapper" style="position:fixed;top:12px;right:14px;z-index:600;display:flex;flex-direction:column;align-items:center;gap:6px">
       <button id="profile-btn" onclick="toggleGearMenu(event)" title="${profile.name || 'Menu'}"
         style="width:38px;height:38px;border-radius:50%;background:#1e293b;border:1px solid #334155;color:#94a3b8;font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:Georgia,serif;box-shadow:0 2px 8px rgba(0,0,0,0.4)">
         ⚙
       </button>
-      <div id="gear-menu" style="display:none;position:absolute;top:calc(100% + 8px);right:0;background:#0f172a;border:1px solid #1e293b;border-radius:10px;padding:6px;min-width:190px;z-index:601;box-shadow:0 8px 24px rgba(0,0,0,0.6)">
+      ${syncIcon}
+      <div id="gear-menu" style="display:none;position:absolute;top:calc(100% + 4px);right:0;background:#0f172a;border:1px solid #1e293b;border-radius:10px;padding:6px;min-width:190px;z-index:601;box-shadow:0 8px 24px rgba(0,0,0,0.6)">
         <div style="font-size:11px;color:#475569;padding:6px 12px 4px;letter-spacing:0.06em;text-transform:uppercase">${profile.name || 'Profile'}</div>
         <div style="border-top:1px solid #1e293b;margin:4px 0"></div>
         <button onclick="closeGearMenu();window.MarathonProfile.showProfileModal()" class="gear-item">✏️ Edit Profile</button>
@@ -903,7 +903,6 @@ function render() {
             → ${new Date(profile.raceDate + 'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}
             · ${totalWeeks} Weeks
           </div>
-          <div style="margin-top:8px">${syncBadge}</div>
         </div>
 
         <!-- Center/Right: phase badge (centered in its own column) -->

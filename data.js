@@ -239,6 +239,67 @@ const MEAL_PLAN = {
       ]
     },
     {
+      label: 'Calisthenics Day',
+      emoji: '💪',
+      color: '#7c3aed',
+      note: 'Strength day — higher protein, moderate carbs. Feed the muscle you are building.',
+      meals: [
+        {
+          name: 'Breakfast',
+          time: '7:00 AM',
+          items: [
+            '3-egg omelette with spinach, peppers, and feta cheese',
+            '1 slice whole grain toast with a thin spread of almond butter',
+            'Black coffee or green tea + 16 oz water',
+          ]
+        },
+        {
+          name: 'Pre-Workout Snack',
+          time: '30–45 min before',
+          items: [
+            'Greek yogurt (1 cup plain 2%) with a drizzle of honey',
+            'OR: 1 apple + 1 tbsp peanut butter',
+            '12 oz water',
+          ]
+        },
+        {
+          name: 'Lunch',
+          time: '12:00 PM',
+          items: [
+            'Power bowl: ground turkey or chicken, black beans, brown rice, salsa, avocado',
+            'Side of roasted broccoli or zucchini',
+            'Sparkling water or electrolyte drink',
+          ]
+        },
+        {
+          name: 'Post-Workout Shake',
+          time: 'Within 30 min',
+          items: [
+            'Whey or plant protein shake (25–30g protein) with almond milk + banana',
+            'OR: cottage cheese (½ cup) + handful of pretzels',
+          ]
+        },
+        {
+          name: 'Dinner',
+          time: '6:30 PM',
+          items: [
+            'Baked chicken thighs (6 oz, skin off) with garlic, lemon, and herbs',
+            'Roasted sweet potato (medium) or quinoa (¾ cup cooked)',
+            'Steamed green beans or asparagus with olive oil',
+            'Large glass of water — push hydration after bodyweight work',
+          ]
+        },
+        {
+          name: 'Evening Snack',
+          time: '9:00 PM',
+          items: [
+            'Cottage cheese (½ cup) — slow-digesting casein protein repairs muscle overnight',
+            'OR: hard-boiled egg (2) + handful of almonds',
+          ]
+        },
+      ]
+    },
+    {
       label: 'Rest Day',
       emoji: '🧘',
       color: '#60a5fa',
