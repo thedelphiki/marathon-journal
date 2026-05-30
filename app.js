@@ -692,25 +692,24 @@ function render() {
 
   const saveMsg = STATE.saveMsg ? `<div style="position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#4ade80;color:#0a0f1a;padding:10px 20px;border-radius:8px;font-size:13px;z-index:999;font-family:Georgia,serif">${STATE.saveMsg}</div>` : '';
 
-  // Cloud sync button
-  let syncBtnHtml = '';
+  // Cloud sync badge — compact, no email
+  let syncBadge = '';
   if (window.MarathonAuth && window.MarathonAuth.currentUser) {
-    const email = window.MarathonAuth.currentUser.email;
-    const truncatedEmail = email.length > 18 ? email.substring(0, 16) + '...' : email;
-    syncBtnHtml = `<button id="sync-btn" class="sync-btn connected" onclick="window.MarathonAuth.showSyncModal()"><span class="syncing-dot"></span> Cloud Active (${truncatedEmail})</button>`;
+    syncBadge = `<button id="sync-btn" class="sync-badge connected" onclick="window.MarathonAuth.showSyncModal()"><span class="syncing-dot"></span> Cloud Active</button>`;
   } else {
-    syncBtnHtml = `<button id="sync-btn" class="sync-btn" onclick="window.MarathonAuth.showSyncModal()">☁ Connect Cloud Sync</button>`;
+    syncBadge = `<button id="sync-btn" class="sync-badge" onclick="window.MarathonAuth.showSyncModal()">☁ Sync</button>`;
   }
 
-  // Gear menu HTML
+  // Gear menu — fixed top-right corner
   const gearMenuHtml = `
-    <div style="position:relative;display:inline-block">
-      <button id="profile-btn" onclick="toggleGearMenu(event)" style="background:#1e293b;border:1px solid #334155;color:#94a3b8;border-radius:8px;padding:7px 12px;font-size:13px;cursor:pointer;font-family:Georgia,serif;display:flex;align-items:center;gap:6px">
-        <span>👤</span>
-        <span>${profile.name || 'Profile'}</span>
-        <span style="font-size:10px;color:#475569">⚙</span>
+    <div id="gear-wrapper" style="position:fixed;top:12px;right:14px;z-index:600">
+      <button id="profile-btn" onclick="toggleGearMenu(event)" title="${profile.name || 'Menu'}"
+        style="width:38px;height:38px;border-radius:50%;background:#1e293b;border:1px solid #334155;color:#94a3b8;font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:Georgia,serif;box-shadow:0 2px 8px rgba(0,0,0,0.4)">
+        ⚙
       </button>
-      <div id="gear-menu" style="display:none;position:absolute;top:calc(100% + 6px);right:0;background:#0f172a;border:1px solid #1e293b;border-radius:10px;padding:6px;min-width:190px;z-index:500;box-shadow:0 8px 24px rgba(0,0,0,0.5)">
+      <div id="gear-menu" style="display:none;position:absolute;top:calc(100% + 8px);right:0;background:#0f172a;border:1px solid #1e293b;border-radius:10px;padding:6px;min-width:190px;z-index:601;box-shadow:0 8px 24px rgba(0,0,0,0.6)">
+        <div style="font-size:11px;color:#475569;padding:6px 12px 4px;letter-spacing:0.06em;text-transform:uppercase">${profile.name || 'Profile'}</div>
+        <div style="border-top:1px solid #1e293b;margin:4px 0"></div>
         <button onclick="closeGearMenu();window.MarathonProfile.showProfileModal()" class="gear-item">✏️ Edit Profile</button>
         <button onclick="closeGearMenu();if(window.MarathonTour)MarathonTour.showDirect()" class="gear-item">🗺️ Take a Tour</button>
         <div style="border-top:1px solid #1e293b;margin:4px 0"></div>
@@ -722,46 +721,94 @@ function render() {
     </div>
   `;
 
+  // Tab bar — icon + short label, all visible, no scroll needed
+  const tabs = [
+    {id:'overview',  label:'Overview',  icon:'🗺️'},
+    {id:'weekly',    label:'This Week', icon:'✅'},
+    {id:'nutrition', label:'Meals',     icon:'🥗'},
+    {id:'milestones',label:'Goals',     icon:'🏅'},
+    {id:'log',       label:'Run Log',   icon:'🏃'},
+    {id:'guide',     label:'Guide',     icon:'📖'},
+  ];
+
+  const tabBtns = tabs.map(t => `
+    <button onclick="setTab('${t.id}')" style="
+      flex:1;min-width:0;background:none;border:none;border-bottom:2px solid ${STATE.tab===t.id?'#4ade80':'transparent'};
+      padding:8px 2px;cursor:pointer;color:${STATE.tab===t.id?'#4ade80':'#64748b'};
+      display:flex;flex-direction:column;align-items:center;gap:2px;transition:color 0.2s;font-family:system-ui,sans-serif">
+      <span style="font-size:16px;line-height:1">${t.icon}</span>
+      <span style="font-size:10px;letter-spacing:0.02em;white-space:nowrap">${t.label}</span>
+    </button>`).join('');
+
+  let content = '';
+  if (STATE.tab === 'overview')   content = renderOverview();
+  else if (STATE.tab === 'weekly')     content = renderWeekly();
+  else if (STATE.tab === 'nutrition')  content = renderNutrition();
+  else if (STATE.tab === 'milestones') content = renderMilestones();
+  else if (STATE.tab === 'log')        content = renderLog();
+  else if (STATE.tab === 'guide')      content = renderGuide();
+
+  const saveMsg = STATE.saveMsg
+    ? `<div style="position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#4ade80;color:#0a0f1a;padding:10px 20px;border-radius:8px;font-size:13px;z-index:999;font-family:Georgia,serif">${STATE.saveMsg}</div>`
+    : '';
+
   document.getElementById('app').innerHTML = `
-  <div style="background:linear-gradient(135deg,#0f172a 0%,#1e293b 50%,#0f2a1a 100%);border-bottom:1px solid #1e3a2f;padding:28px 20px 20px;position:relative;overflow:hidden">
-    <div style="position:absolute;top:0;left:0;right:0;bottom:0;background:radial-gradient(ellipse at 20% 50%,rgba(74,222,128,0.06) 0%,transparent 60%);pointer-events:none"></div>
+  ${gearMenuHtml}
+
+  <!-- HEADER -->
+  <div style="background:linear-gradient(135deg,#0f172a 0%,#1e293b 50%,#0f2a1a 100%);border-bottom:1px solid #1e3a2f;padding:22px 20px 18px;position:relative;overflow:hidden">
+    <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 20% 50%,rgba(74,222,128,0.06) 0%,transparent 60%);pointer-events:none"></div>
     <div style="max-width:700px;margin:0 auto;position:relative">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">
-        <div>
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap">
-            <div style="font-size:11px;letter-spacing:0.2em;color:#4ade80;text-transform:uppercase">Marathon Training Journal</div>
+
+      <!-- Title row -->
+      <div style="display:flex;align-items:flex-start;gap:12px">
+
+        <!-- Left: title + date -->
+        <div style="flex:1;min-width:0">
+          <div style="font-size:10px;letter-spacing:0.2em;color:#4ade80;text-transform:uppercase;margin-bottom:4px">Marathon Training Journal</div>
+          <h1 style="margin:0;font-size:24px;font-weight:normal;color:#f8fafc;line-height:1.2;font-family:Georgia,serif">Road to 26.2</h1>
+          <div style="font-size:12px;color:#64748b;margin-top:3px">
+            ${new Date(profile.startDate + 'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}
+            → ${new Date(profile.raceDate + 'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}
+            · ${totalWeeks} Weeks
           </div>
-          <h1 style="margin:0;font-size:26px;font-weight:normal;color:#f8fafc;line-height:1.2">Road to 26.2</h1>
-          <div style="font-size:13px;color:#64748b;margin-top:4px">${new Date(profile.startDate + 'T00:00:00').toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'})} → ${new Date(profile.raceDate + 'T00:00:00').toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'})} · ${totalWeeks} Weeks</div>
+          <div style="margin-top:8px">${syncBadge}</div>
         </div>
-        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
-          <div style="background:${p.color}22;border:1px solid ${p.color}44;border-radius:12px;padding:10px 16px;text-align:center;min-width:130px">
-            <div style="font-size:10px;letter-spacing:0.15em;color:${p.color};text-transform:uppercase">Current Phase</div>
-            <div style="font-size:18px;color:${p.color};font-weight:bold;margin-top:2px">${p.name}</div>
-            <div style="font-size:11px;color:#94a3b8;margin-top:2px">${p.weeks}</div>
-          </div>
-          <div style="display:flex;gap:8px;align-items:center">
-            ${syncBtnHtml}
-            ${gearMenuHtml}
-          </div>
+
+        <!-- Center/Right: phase badge (centered in its own column) -->
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;background:${p.color}18;border:1px solid ${p.color}44;border-radius:12px;padding:10px 16px;min-width:120px;text-align:center;margin-right:44px">
+          <div style="font-size:9px;letter-spacing:0.15em;color:${p.color};text-transform:uppercase">Current Phase</div>
+          <div style="font-size:17px;color:${p.color};font-weight:bold;margin-top:3px;font-family:Georgia,serif">${p.name}</div>
+          <div style="font-size:10px;color:#94a3b8;margin-top:2px">${p.weeks}</div>
         </div>
+
       </div>
-      <div style="display:flex;align-items:center;gap:12px;margin-top:20px">
-        <span style="font-size:13px;color:#64748b">Week:</span>
-        <button onclick="setWeek(${Math.max(1,STATE.week-1)})" style="background:#1e293b;border:1px solid #334155;color:#94a3b8;border-radius:6px;width:28px;height:28px;cursor:pointer;font-size:16px;font-family:Georgia,serif">‹</button>
-        <span style="font-size:20px;color:#f8fafc;min-width:30px;text-align:center">${STATE.week}</span>
-        <button onclick="setWeek(${Math.min(totalWeeks,STATE.week+1)})" style="background:#1e293b;border:1px solid #334155;color:#94a3b8;border-radius:6px;width:28px;height:28px;cursor:pointer;font-size:16px;font-family:Georgia,serif">›</button>
-        <div style="flex:1;height:6px;background:#1e293b;border-radius:3px;overflow:hidden"><div style="height:100%;width:${pct}%;background:linear-gradient(90deg,${p.color},${p.color}88);border-radius:3px;transition:width 0.3s"></div></div>
-        <span style="font-size:12px;color:#64748b">${pct}%</span>
+
+      <!-- Week selector -->
+      <div style="display:flex;align-items:center;gap:10px;margin-top:16px">
+        <span style="font-size:12px;color:#64748b">Week:</span>
+        <button onclick="setWeek(${Math.max(1,STATE.week-1)})" style="background:#1e293b;border:1px solid #334155;color:#94a3b8;border-radius:6px;width:26px;height:26px;cursor:pointer;font-size:15px;font-family:Georgia,serif">‹</button>
+        <span style="font-size:18px;color:#f8fafc;min-width:26px;text-align:center;font-family:Georgia,serif">${STATE.week}</span>
+        <button onclick="setWeek(${Math.min(totalWeeks,STATE.week+1)})" style="background:#1e293b;border:1px solid #334155;color:#94a3b8;border-radius:6px;width:26px;height:26px;cursor:pointer;font-size:15px;font-family:Georgia,serif">›</button>
+        <div style="flex:1;height:5px;background:#1e293b;border-radius:3px;overflow:hidden">
+          <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,${p.color},${p.color}88);border-radius:3px;transition:width 0.3s"></div>
+        </div>
+        <span style="font-size:11px;color:#64748b">${pct}%</span>
       </div>
+
     </div>
   </div>
-  <div style="background:#0f172a;border-bottom:1px solid #1e293b;padding:0 20px">
-    <div style="max-width:700px;margin:0 auto" class="tab-bar">${tabBtns}</div>
+
+  <!-- TAB BAR -->
+  <div style="background:#0f172a;border-bottom:1px solid #1e293b;padding:0 8px">
+    <div style="max-width:700px;margin:0 auto;display:flex">${tabBtns}</div>
   </div>
-  <div style="max-width:700px;margin:0 auto;padding:24px 16px">${content}</div>
+
+  <!-- CONTENT -->
+  <div style="max-width:700px;margin:0 auto;padding:20px 16px">${content}</div>
   ${saveMsg}
   `;
+  // render() ends here — all output is in the innerHTML block above
 }
 
 // ── ACTIONS ──────────────────────────────────────────────────────

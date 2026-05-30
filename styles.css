@@ -603,8 +603,59 @@ svg rect:hover {
   color: #e2e8f0;
 }
 
-/* ── TOUR FIXES ───────────────────────────────────────────────── */
-/* Use clip-path on backdrop so spotlight area is fully transparent */
+
+/* ── COMPACT SYNC BADGE ──────────────────────────────────────── */
+.sync-badge {
+  background: rgba(30,41,59,0.5);
+  border: 1px solid #1e293b;
+  color: #94a3b8;
+  border-radius: 20px;
+  padding: 4px 10px;
+  font-size: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  font-family: system-ui, sans-serif;
+  transition: all 0.2s;
+}
+.sync-badge:hover {
+  border-color: #4ade80;
+  color: #4ade80;
+}
+.sync-badge.connected {
+  border-color: rgba(74,222,128,0.3);
+  color: #4ade80;
+  background: rgba(74,222,128,0.05);
+}
+
+/* ── GEAR BUTTON ─────────────────────────────────────────────── */
+#gear-wrapper button:hover {
+  border-color: #4ade80;
+  color: #4ade80;
+}
+
+.gear-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  color: #94a3b8;
+  padding: 9px 12px;
+  font-size: 13px;
+  font-family: system-ui, sans-serif;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.12s;
+  box-sizing: border-box;
+}
+.gear-item:hover {
+  background: #1e293b;
+  color: #e2e8f0;
+}
+
+/* ── TOUR OVERLAY ────────────────────────────────────────────── */
 #tour-overlay {
   display: none;
   position: fixed;
@@ -621,12 +672,10 @@ svg rect:hover {
   transition: clip-path 0.25s ease;
 }
 
-/* Glowing ring around the spotlight target — sits above the backdrop */
 .tour-ring {
   position: fixed;
   border-radius: 8px;
   border: 2px solid #4ade80;
-  box-shadow: 0 0 0 3px rgba(74,222,128,0.15), 0 0 16px rgba(74,222,128,0.3);
   z-index: 2001;
   pointer-events: none;
   animation: tour-pulse 2s infinite;
@@ -650,8 +699,54 @@ svg rect:hover {
   box-shadow: 0 8px 40px rgba(0,0,0,0.6);
 }
 
-.tour-logo {
-  font-size: 32px;
-  text-align: center;
-  margin-bottom: 8px;
+.tour-logo { font-size: 32px; text-align: center; margin-bottom: 8px; }
+
+.tour-progress-bar {
+  height: 3px; background: #1e293b; border-radius: 2px;
+  margin-bottom: 10px; overflow: hidden;
+}
+.tour-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4ade80, #22c55e);
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.tour-step-count {
+  font-size: 11px; color: #475569;
+  letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 10px;
+}
+
+.tour-title {
+  font-size: 16px; font-weight: normal; color: #f8fafc;
+  margin: 0 0 8px; font-family: Georgia, serif;
+}
+
+.tour-body {
+  font-size: 13px; color: #94a3b8;
+  line-height: 1.6; margin: 0 0 18px;
+}
+
+.tour-actions {
+  display: flex; justify-content: space-between;
+  align-items: center; gap: 8px; margin-bottom: 14px;
+}
+
+.tour-left-actions, .tour-right-actions {
+  display: flex; gap: 8px; align-items: center;
+}
+
+.tour-btn {
+  border: none; border-radius: 7px; padding: 9px 16px;
+  font-size: 13px; font-family: system-ui, sans-serif;
+  cursor: pointer; transition: opacity 0.15s;
+}
+.tour-btn:hover { opacity: 0.85; }
+
+.tour-btn-primary { background: #4ade80; color: #0a0f1a; font-weight: bold; }
+.tour-btn-ghost   { background: #1e293b; color: #94a3b8; border: 1px solid #334155; }
+
+.tour-dont-show {
+  font-size: 12px; color: #475569;
+  border-top: 1px solid #1e293b; padding-top: 12px;
 }
