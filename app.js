@@ -117,7 +117,7 @@ function getDynamicPhases() {
       id: 4, 
       name: "Taper", 
       weeks: `Weeks ${pEnd+1}–${totalWeeks}`, 
-      dates: `${formatDate(tStartD)} – ${formatDate(new Date(window.MarathonProfile.state.raceDate))}`, 
+      dates: `${formatDate(tStartD)} – ${formatDate(parseLocalDate(profile.raceDate))}`, 
       color: "#60a5fa", 
       goal: "Race-ready reduction. Sharpen target splits, recover muscles, and maximize carb loads.", 
       weeklyMiles: "20–10 mi/wk",
@@ -665,32 +665,12 @@ function renderGuide() {
 }
 
 function render() {
+  try {
   const p = getPhase(STATE.week);
   const pct = getWeekPct();
   const profile = window.MarathonProfile ? window.MarathonProfile.state : { name: "Runner" };
   const metrics = window.MarathonProfile ? window.MarathonProfile.getCalculatedMetrics() : { totalWeeks: 47 };
   const totalWeeks = metrics.totalWeeks;
-  
-  const tabs = [
-    {id:'overview',label:'Overview'},
-    {id:'weekly',label:'This Week'},
-    {id:'nutrition',label:'Meal Plan'},
-    {id:'milestones',label:'Milestones'},
-    {id:'log',label:'Run Log'},
-    {id:'guide',label:'Guide'}
-  ];
-
-  let tabBtns = tabs.map(t => `<button onclick="setTab('${t.id}')" style="background:none;border:none;padding:14px 14px;cursor:pointer;color:${STATE.tab === t.id ? '#4ade80' : '#64748b'};border-bottom:${STATE.tab === t.id ? '2px solid #4ade80' : '2px solid transparent'};font-size:13px;letter-spacing:0.05em;white-space:nowrap;transition:color 0.2s;font-family:Georgia,serif">${t.label}</button>`).join('');
-
-  let content = '';
-  if (STATE.tab === 'overview') content = renderOverview();
-  else if (STATE.tab === 'weekly') content = renderWeekly();
-  else if (STATE.tab === 'nutrition') content = renderNutrition();
-  else if (STATE.tab === 'milestones') content = renderMilestones();
-  else if (STATE.tab === 'log') content = renderLog();
-  else if (STATE.tab === 'guide') content = renderGuide();
-
-  const saveMsg = STATE.saveMsg ? `<div style="position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#4ade80;color:#0a0f1a;padding:10px 20px;border-radius:8px;font-size:13px;z-index:999;font-family:Georgia,serif">${STATE.saveMsg}</div>` : '';
 
   // Cloud sync badge — compact, no email
   let syncBadge = '';
@@ -809,6 +789,11 @@ function render() {
   ${saveMsg}
   `;
   // render() ends here — all output is in the innerHTML block above
+  } catch(err) {
+    console.error('Render error:', err);
+    const app = document.getElementById('app');
+    if (app) app.innerHTML = `<div style="padding:40px;color:#f87171;font-family:Georgia,serif;text-align:center"><div style="font-size:32px;margin-bottom:16px">⚠️</div><div style="font-size:16px;margin-bottom:8px">Something went wrong loading the journal.</div><div style="font-size:12px;color:#475569;margin-bottom:20px">${err.message}</div><button onclick="location.reload()" style="background:#4ade80;color:#0a0f1a;border:none;border-radius:8px;padding:10px 20px;font-size:14px;cursor:pointer">Reload</button></div>`;
+  }
 }
 
 // ── ACTIONS ──────────────────────────────────────────────────────
@@ -1011,6 +996,7 @@ function getLocalStateForSync() {
 
 // ── INIT ─────────────────────────────────────────────────────────
 if (window.MarathonProfile) {
+  window.MarathonProfile.load();                  // load saved profile from localStorage FIRST
   window.MarathonProfile.updateCalculatedDefaults();
 }
 render();
