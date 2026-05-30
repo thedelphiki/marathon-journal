@@ -276,10 +276,7 @@ function renderOverview() {
     {l:'Target Race Pace',v:`${metrics.raceGoalPace}/mi`,s:`Tempo: ~${metrics.tempoPace}`}
   ];
 
-  let html = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
-    <h2 style="color:#4ade80;font-weight:normal;font-size:18px;margin:0">Biometrics & Pacing Target</h2>
-    <button onclick="window.MarathonProfile.showProfileModal()" style="background:#1e293b;border:1px solid #334155;color:#4ade80;border-radius:8px;padding:6px 14px;font-size:12px;">⚙ Edit Profile</button>
-  </div>`;
+  let html = `<h2 style="color:#4ade80;font-weight:normal;font-size:18px;margin-bottom:18px">Biometrics & Pacing Target</h2>`;
   
   // Stat Grid
   html += `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px">`;
@@ -695,29 +692,34 @@ function render() {
 
   const saveMsg = STATE.saveMsg ? `<div style="position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#4ade80;color:#0a0f1a;padding:10px 20px;border-radius:8px;font-size:13px;z-index:999;font-family:Georgia,serif">${STATE.saveMsg}</div>` : '';
 
-  // Sleek cloud sync button
+  // Cloud sync button
   let syncBtnHtml = '';
   if (window.MarathonAuth && window.MarathonAuth.currentUser) {
     const email = window.MarathonAuth.currentUser.email;
     const truncatedEmail = email.length > 18 ? email.substring(0, 16) + '...' : email;
-    syncBtnHtml = `
-      <button id="sync-btn" class="sync-btn connected" onclick="window.MarathonAuth.showSyncModal()">
-        <span class="syncing-dot"></span> Cloud Active (${truncatedEmail})
-      </button>
-    `;
+    syncBtnHtml = `<button id="sync-btn" class="sync-btn connected" onclick="window.MarathonAuth.showSyncModal()"><span class="syncing-dot"></span> Cloud Active (${truncatedEmail})</button>`;
   } else {
-    syncBtnHtml = `
-      <button id="sync-btn" class="sync-btn" onclick="window.MarathonAuth.showSyncModal()">
-        ☁ Connect Cloud Sync
-      </button>
-    `;
+    syncBtnHtml = `<button id="sync-btn" class="sync-btn" onclick="window.MarathonAuth.showSyncModal()">☁ Connect Cloud Sync</button>`;
   }
 
-  // Profile Custom button
-  const profBtnHtml = `
-    <button id="profile-btn" class="sync-btn" style="border-color:#334155;color:#94a3b8;" onclick="window.MarathonProfile.showProfileModal()">
-      👤 ${profile.name}
-    </button>
+  // Gear menu HTML
+  const gearMenuHtml = `
+    <div style="position:relative;display:inline-block">
+      <button id="profile-btn" onclick="toggleGearMenu(event)" style="background:#1e293b;border:1px solid #334155;color:#94a3b8;border-radius:8px;padding:7px 12px;font-size:13px;cursor:pointer;font-family:Georgia,serif;display:flex;align-items:center;gap:6px">
+        <span>👤</span>
+        <span>${profile.name || 'Profile'}</span>
+        <span style="font-size:10px;color:#475569">⚙</span>
+      </button>
+      <div id="gear-menu" style="display:none;position:absolute;top:calc(100% + 6px);right:0;background:#0f172a;border:1px solid #1e293b;border-radius:10px;padding:6px;min-width:190px;z-index:500;box-shadow:0 8px 24px rgba(0,0,0,0.5)">
+        <button onclick="closeGearMenu();window.MarathonProfile.showProfileModal()" class="gear-item">✏️ Edit Profile</button>
+        <button onclick="closeGearMenu();if(window.MarathonTour)MarathonTour.showDirect()" class="gear-item">🗺️ Take a Tour</button>
+        <div style="border-top:1px solid #1e293b;margin:4px 0"></div>
+        <button onclick="closeGearMenu();exportData()" class="gear-item">⬇ Export Backup</button>
+        <label class="gear-item" style="display:block;cursor:pointer">⬆ Import Backup<input type="file" accept=".json" onchange="closeGearMenu();importData(event)" style="display:none"></label>
+        <div style="border-top:1px solid #1e293b;margin:4px 0"></div>
+        <button onclick="closeGearMenu();handleSignOut()" class="gear-item" style="color:#f87171">🚪 Sign Out</button>
+      </div>
+    </div>
   `;
 
   document.getElementById('app').innerHTML = `
@@ -726,31 +728,31 @@ function render() {
     <div style="max-width:700px;margin:0 auto;position:relative">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">
         <div>
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap">
             <div style="font-size:11px;letter-spacing:0.2em;color:#4ade80;text-transform:uppercase">Marathon Training Journal</div>
-            ${syncBtnHtml}
-            ${profBtnHtml}
           </div>
           <h1 style="margin:0;font-size:26px;font-weight:normal;color:#f8fafc;line-height:1.2">Road to 26.2</h1>
-          <div style="font-size:13px;color:#64748b;margin-top:4px">${new Date(profile.startDate).toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'})} → ${new Date(profile.raceDate).toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'})} · ${totalWeeks} Weeks</div>
+          <div style="font-size:13px;color:#64748b;margin-top:4px">${new Date(profile.startDate + 'T00:00:00').toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'})} → ${new Date(profile.raceDate + 'T00:00:00').toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'})} · ${totalWeeks} Weeks</div>
         </div>
-        <div style="background:${p.color}22;border:1px solid ${p.color}44;border-radius:12px;padding:10px 16px;text-align:center;min-width:130px">
-          <div style="font-size:10px;letter-spacing:0.15em;color:${p.color};text-transform:uppercase">Current Phase</div>
-          <div style="font-size:18px;color:${p.color};font-weight:bold;margin-top:2px">${p.name}</div>
-          <div style="font-size:11px;color:#94a3b8;margin-top:2px">${p.weeks}</div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+          <div style="background:${p.color}22;border:1px solid ${p.color}44;border-radius:12px;padding:10px 16px;text-align:center;min-width:130px">
+            <div style="font-size:10px;letter-spacing:0.15em;color:${p.color};text-transform:uppercase">Current Phase</div>
+            <div style="font-size:18px;color:${p.color};font-weight:bold;margin-top:2px">${p.name}</div>
+            <div style="font-size:11px;color:#94a3b8;margin-top:2px">${p.weeks}</div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            ${syncBtnHtml}
+            ${gearMenuHtml}
+          </div>
         </div>
       </div>
       <div style="display:flex;align-items:center;gap:12px;margin-top:20px">
         <span style="font-size:13px;color:#64748b">Week:</span>
-        <button onclick="setWeek(${Math.max(1,STATE.week-1)})" style="background:#1e293b;border:1px solid #334155;color:#94a3b8;border-radius:6px;width:28px;height:28px;cursor:pointer;font-size:16px">‹</button>
+        <button onclick="setWeek(${Math.max(1,STATE.week-1)})" style="background:#1e293b;border:1px solid #334155;color:#94a3b8;border-radius:6px;width:28px;height:28px;cursor:pointer;font-size:16px;font-family:Georgia,serif">‹</button>
         <span style="font-size:20px;color:#f8fafc;min-width:30px;text-align:center">${STATE.week}</span>
-        <button onclick="setWeek(${Math.min(totalWeeks,STATE.week+1)})" style="background:#1e293b;border:1px solid #334155;color:#94a3b8;border-radius:6px;width:28px;height:28px;cursor:pointer;font-size:16px">›</button>
+        <button onclick="setWeek(${Math.min(totalWeeks,STATE.week+1)})" style="background:#1e293b;border:1px solid #334155;color:#94a3b8;border-radius:6px;width:28px;height:28px;cursor:pointer;font-size:16px;font-family:Georgia,serif">›</button>
         <div style="flex:1;height:6px;background:#1e293b;border-radius:3px;overflow:hidden"><div style="height:100%;width:${pct}%;background:linear-gradient(90deg,${p.color},${p.color}88);border-radius:3px;transition:width 0.3s"></div></div>
         <span style="font-size:12px;color:#64748b">${pct}%</span>
-      </div>
-      <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
-        <button onclick="exportData()" style="background:#1e293b;border:1px solid #334155;color:#94a3b8;border-radius:6px;padding:7px 14px;font-size:12px;cursor:pointer;font-family:Georgia,serif">⬇ Export Backup</button>
-        <label style="background:#1e293b;border:1px solid #334155;color:#94a3b8;border-radius:6px;padding:7px 14px;font-size:12px;cursor:pointer">⬆ Import Backup<input type="file" accept=".json" onchange="importData(event)" style="display:none"></label>
       </div>
     </div>
   </div>
@@ -766,6 +768,43 @@ function render() {
 function setTab(t) {
   STATE.tab = t;
   render();
+}
+
+function toggleGearMenu(e) {
+  e.stopPropagation();
+  const menu = document.getElementById('gear-menu');
+  if (!menu) return;
+  const isOpen = menu.style.display === 'block';
+  menu.style.display = isOpen ? 'none' : 'block';
+  if (!isOpen) {
+    // Close when clicking anywhere else
+    setTimeout(() => {
+      document.addEventListener('click', closeGearMenu, { once: true });
+    }, 0);
+  }
+}
+
+function closeGearMenu() {
+  const menu = document.getElementById('gear-menu');
+  if (menu) menu.style.display = 'none';
+}
+
+function handleSignOut() {
+  if (confirm('Sign out and return to the welcome screen?')) {
+    // Clear local profile so onboarding triggers again
+    localStorage.removeItem('road2262_profile_v1');
+    localStorage.removeItem('road2262_onboarded_v1');
+    // Sign out of Firebase if logged in
+    if (window.isFirebaseConfigured && firebase.auth().currentUser) {
+      firebase.auth().signOut().then(() => {
+        location.reload();
+      }).catch(() => {
+        location.reload();
+      });
+    } else {
+      location.reload();
+    }
+  }
 }
 
 function setWeek(w) {

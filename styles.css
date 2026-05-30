@@ -580,3 +580,78 @@ svg rect:hover {
   border-top: 1px solid #1e293b;
   padding-top: 12px;
 }
+
+/* ── GEAR MENU ────────────────────────────────────────────────── */
+.gear-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  color: #94a3b8;
+  padding: 9px 12px;
+  font-size: 13px;
+  font-family: Georgia, serif;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.12s;
+  box-sizing: border-box;
+}
+
+.gear-item:hover {
+  background: #1e293b;
+  color: #e2e8f0;
+}
+
+/* ── TOUR FIXES ───────────────────────────────────────────────── */
+/* Use clip-path on backdrop so spotlight area is fully transparent */
+#tour-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  pointer-events: none;
+}
+
+.tour-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 8, 20, 0.80);
+  pointer-events: all;
+  transition: clip-path 0.25s ease;
+}
+
+/* Glowing ring around the spotlight target — sits above the backdrop */
+.tour-ring {
+  position: fixed;
+  border-radius: 8px;
+  border: 2px solid #4ade80;
+  box-shadow: 0 0 0 3px rgba(74,222,128,0.15), 0 0 16px rgba(74,222,128,0.3);
+  z-index: 2001;
+  pointer-events: none;
+  animation: tour-pulse 2s infinite;
+}
+
+@keyframes tour-pulse {
+  0%   { box-shadow: 0 0 0 3px rgba(74,222,128,0.15), 0 0 16px rgba(74,222,128,0.3); }
+  50%  { box-shadow: 0 0 0 5px rgba(74,222,128,0.08), 0 0 24px rgba(74,222,128,0.4); }
+  100% { box-shadow: 0 0 0 3px rgba(74,222,128,0.15), 0 0 16px rgba(74,222,128,0.3); }
+}
+
+.tour-card {
+  background: #0f172a;
+  border: 1px solid #4ade8055;
+  border-radius: 14px;
+  padding: 22px 20px 16px;
+  width: calc(100vw - 40px);
+  max-width: 380px;
+  z-index: 2002;
+  pointer-events: all;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.6);
+}
+
+.tour-logo {
+  font-size: 32px;
+  text-align: center;
+  margin-bottom: 8px;
+}
