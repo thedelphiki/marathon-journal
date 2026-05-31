@@ -120,6 +120,26 @@ const MarathonProfile = {
       </div>`;
   },
 
+
+  selectGoal: function(goalId) {
+    const g = window.TRAINING_GOALS && TRAINING_GOALS[goalId];
+    if (!g) return;
+    // Update radio
+    const radio = document.querySelector(`input[name="trainingGoal"][value="${goalId}"]`);
+    if (radio) radio.checked = true;
+    // Update card styles
+    Object.keys(TRAINING_GOALS).forEach(id => {
+      const card = document.getElementById('pg-' + id);
+      if (!card) return;
+      const goal = TRAINING_GOALS[id];
+      const active = id === goalId;
+      card.style.background  = active ? goal.color+'18' : '#060a12';
+      card.style.borderColor = active ? goal.color : '#334155';
+      const lbl = card.querySelector('div > div:first-child');
+      if (lbl) { lbl.style.color = active ? goal.color : '#94a3b8'; lbl.style.fontWeight = active ? 'bold' : 'normal'; }
+    });
+  },
+
   toggleDay: function(pickerPrefix, day, btn, maxSelect) {
     const input = document.getElementById(`${pickerPrefix}-days`);
     if (!input) return;
@@ -232,6 +252,24 @@ const MarathonProfile = {
         <p class="auth-subtitle">Customize your schedule, training style, and targets.</p>
         <form onsubmit="MarathonProfile.handleProfileSubmit(event)">
 
+          <!-- SECTION: Training Goal -->
+          <div style="font-size:10px;color:#4ade80;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:8px">Training Goal</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+            ${Object.values(TRAINING_GOALS).map(g => {
+              const active = s.trainingGoal === g.id;
+              return `<div onclick="MarathonProfile.selectGoal('${g.id}')" id="pg-${g.id}"
+                style="background:${active ? g.color+'18' : '#060a12'};border:2px solid ${active ? g.color : '#334155'};
+                  border-radius:8px;padding:10px 12px;cursor:pointer;transition:all 0.15s;display:flex;align-items:center;gap:8px">
+                <span style="font-size:16px">${g.emoji}</span>
+                <div>
+                  <div style="font-size:12px;color:${active ? g.color : '#94a3b8'};font-family:system-ui;font-weight:${active ? 'bold' : 'normal'}">${g.label}</div>
+                  <div style="font-size:10px;color:#475569;font-family:system-ui;margin-top:1px">${g.tagline}</div>
+                </div>
+                <input type="radio" name="trainingGoal" value="${g.id}" ${active ? 'checked' : ''} style="display:none">
+              </div>`;
+            }).join('')}
+          </div>
+
           <!-- SECTION: Personal -->
           <div style="font-size:10px;color:#4ade80;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:8px">Personal</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
@@ -316,6 +354,7 @@ const MarathonProfile = {
       raceDate:           document.getElementById('prof-race').value,
       strengthType:       getRadio('strengthType', 'calisthenics'),
       cardioType:         getRadio('cardioType',   'running'),
+      trainingGoal:       getRadio('trainingGoal', 'marathon'),
       restDays:           getJSON('rest-days',    '["Thursday","Saturday"]'),
       cardDays:           getJSON('cardio-days',  '["Sunday","Tuesday","Wednesday"]'),
       workoutDays:        getJSON('workout-days', '["Monday","Friday"]'),

@@ -16,11 +16,140 @@ const MarathonOnboarding = {
     localStorage.setItem(ONBOARDING_KEY, 'true');
   },
 
+  // ── STEP 0: Goal Selection ────────────────────────────────────
+  // This is the new entry point — routes to correct plan and fitnessLevel
   maybeShow: function() {
     if (this.isIncomplete()) {
-      this.showStep1();
+      this.showStep0();
     }
   },
+
+  showStep0: function() {
+    this._render(`
+      <div class="ob-header">
+        <div class="ob-logo">🎯</div>
+        <h1 class="ob-title">What's your goal?</h1>
+        <p class="ob-sub">Your plan is built around this. You can change it anytime.</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px">
+        ${Object.values(TRAINING_GOALS).map(g => `
+          <button type="button" onclick="MarathonOnboarding.selectGoal('${g.id}')"
+            id="ob-goal-${g.id}"
+            style="background:#060a12;border:2px solid #1e293b;border-radius:10px;
+              padding:12px 16px;text-align:left;cursor:pointer;transition:all 0.15s;
+              display:flex;align-items:center;gap:12px;width:100%">
+            <span style="font-size:22px;flex-shrink:0">${g.emoji}</span>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:14px;color:#e2e8f0;font-family:system-ui">${g.label}</div>
+              <div style="font-size:11px;color:#475569;margin-top:2px;font-family:system-ui">${g.tagline}</div>
+            </div>
+          </button>`).join('')}
+      </div>
+      <div class="ob-step-dots">
+        <span class="ob-dot ob-dot-active"></span>
+        <span class="ob-dot"></span>
+        <span class="ob-dot"></span>
+        <span class="ob-dot"></span>
+        <span class="ob-dot"></span>
+      </div>
+    `);
+  },
+
+  selectGoal: function(goalId) {
+    // Highlight selected card
+    Object.keys(TRAINING_GOALS).forEach(id => {
+      const btn = document.getElementById('ob-goal-' + id);
+      if (!btn) return;
+      const g = TRAINING_GOALS[id];
+      if (id === goalId) {
+        btn.style.borderColor = g.color;
+        btn.style.background  = g.color + '18';
+        btn.querySelector('div > div:first-child').style.color = g.color;
+      } else {
+        btn.style.borderColor = '#1e293b';
+        btn.style.background  = '#060a12';
+        btn.querySelector('div > div:first-child').style.color = '#e2e8f0';
+      }
+    });
+    this._draft.trainingGoal = goalId;
+    // Set sensible defaults based on goal
+    const g = TRAINING_GOALS[goalId];
+    if (g) {
+      this._draft.currentEasyPace    = g.defaultPace;
+      this._draft.targetMarathonPace = g.defaultPace;
+      // For c25k/fitness set beginner level, otherwise intermediate
+      this._draft.fitnessLevel = (goalId === 'c25k' || goalId === 'fitness') ? 'beginner' : 'intermediate';
+      // Auto-set race date based on goal's default weeks
+      const raceDate = new Date();
+      raceDate.setDate(raceDate.getDate() + g.defaultWeeks * 7);
+      this._draft.raceDate = raceDate.toISOString().split('T')[0];
+    }
+    // Advance to fitness level after brief delay for feedback
+    setTimeout(() => this.showStep0b(), 250);
+  },
+
+  // ── STEP 0b: Fitness Level ─────────────────────────────────────
+  showStep0b: function() {
+    const goal = TRAINING_GOALS[this._draft.trainingGoal] || TRAINING_GOALS.marathon;
+    const levels = [
+      { id:'beginner',     label:'New to exercise',  desc:'Little or no current fitness routine',         emoji:'🌱' },
+      { id:'intermediate', label:'Somewhat active',   desc:'Exercise occasionally, can run a mile or two', emoji:'🏃' },
+      { id:'advanced',     label:'Regularly active',  desc:'Consistent training, solid aerobic base',      emoji:'⚡' },
+    ];
+    this._render(`
+      <div class="ob-header">
+        <div class="ob-logo">${goal.emoji}</div>
+        <h1 class="ob-title">${goal.label}</h1>
+        <p class="ob-sub">How would you describe your current fitness?</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px">
+        ${levels.map(l => {
+          const active = this._draft.fitnessLevel === l.id;
+          return `<button type="button" onclick="MarathonOnboarding.selectFitnessLevel('${l.id}',this)"
+            data-level="${l.id}"
+            style="background:${active ? goal.color+'18' : '#060a12'};
+              border:2px solid ${active ? goal.color : '#1e293b'};
+              border-radius:10px;padding:12px 16px;text-align:left;cursor:pointer;
+              transition:all 0.15s;display:flex;align-items:center;gap:12px;width:100%">
+            <span style="font-size:22px;flex-shrink:0">${l.emoji}</span>
+            <div>
+              <div style="font-size:14px;color:${active ? goal.color : '#e2e8f0'};font-family:system-ui">${l.label}</div>
+              <div style="font-size:11px;color:#475569;margin-top:2px;font-family:system-ui">${l.desc}</div>
+            </div>
+          </button>`;
+        }).join('')}
+      </div>
+      <div style="display:flex;gap:10px">
+        <button type="button" class="ob-btn ob-btn-back" onclick="MarathonOnboarding.showStep0()">← Back</button>
+        <button type="button" class="ob-btn" onclick="MarathonOnboarding.submitStep0b()">Continue →</button>
+      </div>
+      <div class="ob-step-dots" style="margin-top:16px">
+        <span class="ob-dot"></span>
+        <span class="ob-dot ob-dot-active"></span>
+        <span class="ob-dot"></span>
+        <span class="ob-dot"></span>
+        <span class="ob-dot"></span>
+      </div>
+    `);
+  },
+
+  selectFitnessLevel: function(level, btn) {
+    this._draft.fitnessLevel = level;
+    const goal = TRAINING_GOALS[this._draft.trainingGoal] || TRAINING_GOALS.marathon;
+    document.querySelectorAll('[data-level]').forEach(b => {
+      const isActive = b.dataset.level === level;
+      b.style.borderColor = isActive ? goal.color : '#1e293b';
+      b.style.background  = isActive ? goal.color + '18' : '#060a12';
+      b.querySelector('div > div:first-child').style.color = isActive ? goal.color : '#e2e8f0';
+    });
+  },
+
+  submitStep0b: function() {
+    if (!this._draft.fitnessLevel) this._draft.fitnessLevel = 'intermediate';
+    this.showStep1();
+  },
+
+
 
   // ── STEP 1: Personal Info ──────────────────────────────────────
   showStep1: function() {
@@ -60,9 +189,14 @@ const MarathonOnboarding = {
             <input type="number" id="ob-targetWeight" class="ob-input" placeholder="e.g. 185" min="80" max="400" required>
           </div>
         </div>
-        <button type="submit" class="ob-btn">Continue →</button>
+        <div style="display:flex;gap:10px">
+          <button type="button" class="ob-btn ob-btn-back" onclick="MarathonOnboarding.showStep0b()">← Back</button>
+          <button type="submit" class="ob-btn">Continue →</button>
+        </div>
       </form>
       <div class="ob-step-dots">
+        <span class="ob-dot"></span>
+        <span class="ob-dot"></span>
         <span class="ob-dot ob-dot-active"></span>
         <span class="ob-dot"></span>
         <span class="ob-dot"></span>
@@ -73,6 +207,7 @@ const MarathonOnboarding = {
   submitStep1: function(e) {
     e.preventDefault();
     this._draft = {
+      ...this._draft,
       name:         document.getElementById('ob-name').value.trim(),
       gender:       document.getElementById('ob-gender').value,
       age:          parseInt(document.getElementById('ob-age').value, 10),

@@ -59,71 +59,28 @@ function persist() {
 
 // Returns phase configurations dynamically scaled based on custom training program weeks
 function getDynamicPhases() {
-  const profile = window.MarathonProfile ? window.MarathonProfile.state : {
-    startDate: "2026-05-25",
-    raceDate: "2027-04-12",
-    climate: "south-fl"
-  };
+  const profile    = window.MarathonProfile ? window.MarathonProfile.state : {};
+  const goalId     = profile.trainingGoal || 'marathon';
+  const goal       = window.TRAINING_GOALS && TRAINING_GOALS[goalId] ? TRAINING_GOALS[goalId] : TRAINING_GOALS['marathon'];
+  const totalWeeks = (typeof STATE !== 'undefined' ? STATE.totalWeeks : null)
+    || (window.MarathonProfile ? window.MarathonProfile.getCalculatedMetrics().totalWeeks : goal.defaultWeeks);
 
-  const metrics = window.MarathonProfile ? window.MarathonProfile.getCalculatedMetrics() : { totalWeeks: 47 };
-  const totalWeeks = metrics.totalWeeks;
+  const startD = parseLocalDate(profile.startDate || new Date().toISOString().split('T')[0]);
 
-  const fEnd = Math.max(1, Math.round(totalWeeks * 0.20));
-  const bEnd = Math.max(fEnd + 1, Math.round(totalWeeks * 0.60));
-  const pEnd = Math.max(bEnd + 1, Math.round(totalWeeks * 0.90));
-  
-  const startD = parseLocalDate(profile.startDate);
-  
-  const formatDate = (d) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  
-  // Calculate exact phase start/end dates
-  const fStartD = new Date(startD);
-  const bStartD = new Date(startD); bStartD.setDate(fStartD.getDate() + fEnd * 7);
-  const pStartD = new Date(startD); pStartD.setDate(fStartD.getDate() + bEnd * 7);
-  const tStartD = new Date(startD); tStartD.setDate(fStartD.getDate() + pEnd * 7);
-  
-  return [
-    {
-      id: 1, 
-      name: "Foundation", 
-      weeks: `Weeks 1–${fEnd}`, 
-      dates: `${formatDate(fStartD)} – ${formatDate(new Date(bStartD.getTime() - 86400000))}`, 
-      color: "#4ade80", 
-      goal: "Build solid aerobic base, establish daily discipline, and prepare muscles for volume.", 
-      weeklyMiles: "12–15 mi/wk",
-      maxWeek: fEnd
-    },
-    {
-      id: 2, 
-      name: "Build", 
-      weeks: `Weeks ${fEnd+1}–${bEnd}`, 
-      dates: `${formatDate(bStartD)} – ${formatDate(new Date(pStartD.getTime() - 86400000))}`, 
-      color: "#facc15", 
-      goal: "Increase running volume, scale strength/calisthenics, and cement target pacing splits.", 
-      weeklyMiles: "20–30 mi/wk",
-      maxWeek: bEnd
-    },
-    {
-      id: 3, 
-      name: "Peak", 
-      weeks: `Weeks ${bEnd+1}–${pEnd}`, 
-      dates: `${formatDate(pStartD)} – ${formatDate(new Date(tStartD.getTime() - 86400000))}`, 
-      color: "#f97316", 
-      goal: "Achieve peak volume, run longest efforts (18–20 miles), and maximize calisthenics reps.", 
-      weeklyMiles: "35–45 mi/wk",
-      maxWeek: pEnd
-    },
-    {
-      id: 4, 
-      name: "Taper", 
-      weeks: `Weeks ${pEnd+1}–${totalWeeks}`, 
-      dates: `${formatDate(tStartD)} – ${formatDate(parseLocalDate(profile.raceDate))}`, 
-      color: "#60a5fa", 
-      goal: "Race-ready reduction. Sharpen target splits, recover muscles, and maximize carb loads.", 
-      weeklyMiles: "20–10 mi/wk",
-      maxWeek: totalWeeks
-    }
-  ];
+  const formatDate = (d) => d.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+
+  return goal.phases.map((ph, i) => {
+    const wStart = Math.round(ph.pct[0] * totalWeeks) + 1;
+    const wEnd   = Math.round(ph.pct[1] * totalWeeks);
+    const dStart = new Date(startD); dStart.setDate(startD.getDate() + (wStart-1)*7);
+    const dEnd   = new Date(startD); dEnd.setDate(startD.getDate() + wEnd*7 - 1);
+    return {
+      ...ph,
+      weeks: `Weeks ${wStart}–${wEnd}`,
+      dates: `${formatDate(dStart)} – ${formatDate(dEnd)}`,
+      maxWeek: wEnd,
+    };
+  });
 }
 
 function getPhase(w) {
@@ -509,6 +466,15 @@ function renderOverview() {
     const active = STATE.week <= ph.maxWeek && (ph.id === 1 || STATE.week > phases[ph.id - 2].maxWeek);
     html += `<div style="background:${active ? ph.color + '11' : '#0f172a'};border:1px solid ${active ? ph.color + '33' : '#1e293b'};border-left:3px solid ${ph.color};border-radius:10px;padding:14px 16px;margin-bottom:10px"><div style="display:flex;justify-content:space-between;align-items:center"><div><span style="color:${ph.color};font-size:15px;font-weight:bold;">Phase ${ph.id}: ${ph.name}</span><span style="color:#475569;font-size:12px;margin-left:10px">${ph.weeks} · ${ph.dates}</span></div><span style="font-size:11px;color:#475569">${ph.weeklyMiles}</span></div><div style="font-size:13px;color:#94a3b8;margin-top:6px">${ph.goal}</div></div>`;
   });
+
+  // Science basis note
+  const goal = window.TRAINING_GOALS && TRAINING_GOALS[profile.trainingGoal];
+  if (goal && goal.scienceNote) {
+    html += `<div style="background:#060a12;border:1px solid #1e293b;border-left:3px solid ${goal.color}66;border-radius:8px;padding:10px 14px;margin-top:4px">
+      <div style="font-size:10px;color:${goal.color};letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px">📚 Science Basis</div>
+      <div style="font-size:11px;color:#64748b;line-height:1.6">${goal.scienceNote}</div>
+    </div>`;
+  }
 
   return html;
 }
@@ -956,11 +922,11 @@ function render() {
         <!-- Left: title + date -->
         <div style="flex:1;min-width:0">
           <div style="font-size:10px;letter-spacing:0.2em;color:#4ade80;text-transform:uppercase;margin-bottom:4px">Marathon Training Journal</div>
-          <h1 style="margin:0;font-size:24px;font-weight:normal;color:#f8fafc;line-height:1.2;font-family:Georgia,serif">Road to 26.2</h1>
+          <h1 style="margin:0;font-size:24px;font-weight:normal;color:#f8fafc;line-height:1.2;font-family:Georgia,serif">${(function(){ const g = window.TRAINING_GOALS && TRAINING_GOALS[profile.trainingGoal]; return g ? g.label : 'Road to 26.2'; })()}</h1>
           <div style="font-size:12px;color:#64748b;margin-top:3px">
             ${new Date(profile.startDate + 'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}
             → ${new Date(profile.raceDate + 'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}
-            · ${totalWeeks} Weeks
+            · ${totalWeeks} Weeks · ${(window.TRAINING_GOALS && TRAINING_GOALS[profile.trainingGoal] ? TRAINING_GOALS[profile.trainingGoal].tagline : '')}
           </div>
         </div>
 
@@ -1213,6 +1179,12 @@ function getLocalStateForSync() {
 if (window.MarathonProfile) {
   window.MarathonProfile.load();                  // load saved profile from localStorage FIRST
   window.MarathonProfile.updateCalculatedDefaults();
+}
+// Initialize milestones from goal-specific data if STATE.milestones is empty
+if (!STATE.milestones || STATE.milestones.length === 0) {
+  const goalId = window.MarathonProfile ? window.MarathonProfile.state.trainingGoal : 'marathon';
+  const goal = window.TRAINING_GOALS && TRAINING_GOALS[goalId] ? TRAINING_GOALS[goalId] : null;
+  STATE.milestones = ((goal && goal.milestones) ? goal.milestones : DEFAULT_MILESTONES).map(m => ({...m}));
 }
 render();
 

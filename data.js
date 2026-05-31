@@ -568,3 +568,151 @@ function buildWeeklyTemplate(restDays) {
     return { day, ...assigned[day] };
   });
 }
+
+// ── TRAINING GOALS ────────────────────────────────────────────────
+// Each goal defines: display info, phase structure, milestones,
+// default week count, and science basis note.
+// Science references: ACSM Guidelines for Exercise Testing and Prescription (11th ed.),
+// Hal Higdon Marathon/5K/10K Training Programs, Jack Daniels' Running Formula (3rd ed.),
+// Couch to 5K (NHS/ACSM validated run/walk protocol)
+
+const TRAINING_GOALS = {
+
+  c25k: {
+    id: 'c25k',
+    label: 'Couch to 5K',
+    emoji: '🚶',
+    tagline: 'Start from zero. Run a 5K in 9 weeks.',
+    desc: 'A proven walk-to-run program for complete beginners.',
+    color: '#4ade80',
+    defaultWeeks: 9,
+    defaultPace: '15:00',
+    scienceNote: 'Based on the NHS/ACSM-validated run/walk interval protocol. Alternating walk and run intervals exploits the principle of progressive overload while keeping injury risk low for deconditioned individuals.',
+    phases: [
+      { id:1, name:'Walk/Run', pct:[0,0.44],  color:'#4ade80', goal:'Build the habit. Alternate walking and running. No pressure on pace.', weeklyMiles:'6–10 mi/wk' },
+      { id:2, name:'Running',  pct:[0.44,0.78],color:'#facc15', goal:'Run continuously for 20+ minutes. Pace does not matter yet.', weeklyMiles:'10–14 mi/wk' },
+      { id:3, name:'5K Ready', pct:[0.78,1],   color:'#f97316', goal:'Run a full 5K (3.1 miles) without stopping. You are a runner.', weeklyMiles:'12–15 mi/wk' },
+    ],
+    milestones: [
+      { week:1,  goal:'Complete Week 1 — walk/run intervals 3 days', done:false },
+      { week:3,  goal:'Run 8 minutes continuously without stopping', done:false },
+      { week:5,  goal:'Run 20 minutes continuously — biggest milestone of the plan', done:false },
+      { week:7,  goal:'Run 25 minutes without stopping', done:false },
+      { week:9,  goal:'🏅 Run a full 5K (3.1 miles) — you did it!', done:false },
+    ],
+  },
+
+  fivek: {
+    id: 'fivek',
+    label: '5K / 10K',
+    emoji: '🏅',
+    tagline: 'Get faster. Race your best time.',
+    desc: 'Structured speed and interval work for 5K and 10K runners.',
+    color: '#facc15',
+    defaultWeeks: 12,
+    defaultPace: '12:00',
+    scienceNote: 'Interval training at VO2max intensity (as defined by Jack Daniels\' VDOT system) produces the greatest aerobic adaptations for short-distance racing. 80/20 training distribution (80% easy, 20% hard) is supported by Seiler & Tønnessen (2009).',
+    phases: [
+      { id:1, name:'Base',     pct:[0,0.33],  color:'#4ade80', goal:'Build aerobic base with easy runs and light speedwork.', weeklyMiles:'12–18 mi/wk' },
+      { id:2, name:'Speed',    pct:[0.33,0.75],color:'#facc15', goal:'Interval training at 5K pace. Track workouts. Tempo runs.', weeklyMiles:'18–25 mi/wk' },
+      { id:3, name:'Race Prep',pct:[0.75,1],  color:'#f97316', goal:'Sharpening. Race-pace workouts. Short taper before race day.', weeklyMiles:'15–20 mi/wk' },
+    ],
+    milestones: [
+      { week:2,  goal:'Complete first interval session — 6×400m at effort', done:false },
+      { week:4,  goal:'Run a time trial 5K — establish your baseline', done:false },
+      { week:7,  goal:'First tempo run at race pace for 20+ minutes', done:false },
+      { week:10, goal:'Sub-30 min 5K or sub-60 min 10K — pace goal reached', done:false },
+      { week:12, goal:'🏅 Race day — run your best 5K or 10K!', done:false },
+    ],
+  },
+
+  half: {
+    id: 'half',
+    label: 'Half Marathon',
+    emoji: '🏃',
+    tagline: 'Build to 13.1 miles in 16 weeks.',
+    desc: 'A structured 16-week plan from 5K base to half marathon finish.',
+    color: '#f97316',
+    defaultWeeks: 16,
+    defaultPace: '11:30',
+    scienceNote: 'ACSM recommends a minimum 12–16 week build for half marathon preparation. The 10% weekly mileage increase rule (Macera et al., 1989) is applied to reduce overuse injury risk. Long runs capped at 10–11 miles per Higdon\'s half marathon plans.',
+    phases: [
+      { id:1, name:'Foundation', pct:[0,0.31], color:'#4ade80', goal:'Build to a comfortable 6-mile long run. 3 days running per week.', weeklyMiles:'15–20 mi/wk' },
+      { id:2, name:'Build',      pct:[0.31,0.69],color:'#facc15', goal:'Long run reaches 9–10 miles. Add tempo work once per week.', weeklyMiles:'22–30 mi/wk' },
+      { id:3, name:'Peak',       pct:[0.69,0.88],color:'#f97316', goal:'11-mile long run. Race-pace miles in long runs. Peak week.', weeklyMiles:'28–35 mi/wk' },
+      { id:4, name:'Taper',      pct:[0.88,1],   color:'#60a5fa', goal:'2-week taper. Cut volume by 40%. Stay sharp, stay rested.', weeklyMiles:'18–22 mi/wk' },
+    ],
+    milestones: [
+      { week:3,  goal:'Run 5 miles without stopping', done:false },
+      { week:6,  goal:'Complete first 8-mile long run', done:false },
+      { week:9,  goal:'Run 10 miles — over halfway to race distance', done:false },
+      { week:12, goal:'Complete 11-mile peak long run', done:false },
+      { week:14, goal:'Taper begins — trust the training', done:false },
+      { week:16, goal:'🏅 Race day — run 13.1 miles!', done:false },
+    ],
+  },
+
+  marathon: {
+    id: 'marathon',
+    label: 'Marathon',
+    emoji: '🏆',
+    tagline: 'Train for 26.2 miles over 47 weeks.',
+    desc: 'A full marathon training plan with periodized phases.',
+    color: '#a78bfa',
+    defaultWeeks: 47,
+    defaultPace: '13:00',
+    scienceNote: 'Marathon training follows periodization principles (Issurin, 2010). The long run is capped at 20 miles per research showing diminishing returns and increased injury risk beyond this distance (Marti et al., 1988). 80/20 training intensity distribution is applied throughout.',
+    phases: [
+      { id:1, name:'Foundation', pct:[0,0.17], color:'#4ade80', goal:'Build aerobic base, establish routine, reduce injury risk.', weeklyMiles:'15–20 mi/wk' },
+      { id:2, name:'Build',      pct:[0.17,0.43],color:'#facc15', goal:'Increase mileage, improve pace, cement long run habit.', weeklyMiles:'25–35 mi/wk' },
+      { id:3, name:'Peak',       pct:[0.43,0.85],color:'#f97316', goal:'Long runs to 20 miles, tempo work, race-pace miles.', weeklyMiles:'35–45 mi/wk' },
+      { id:4, name:'Taper',      pct:[0.85,1],   color:'#60a5fa', goal:'3-week taper. Reduce volume, maintain intensity.', weeklyMiles:'20–10 mi/wk' },
+    ],
+    milestones: [
+      { week:4,  goal:'Run 5K without stopping — sub-37 min', done:false },
+      { week:8,  goal:'Complete first 10-mile long run', done:false },
+      { week:14, goal:'Half marathon distance (13.1 miles)', done:false },
+      { week:20, goal:'16-mile long run', done:false },
+      { week:28, goal:'20-mile long run — peak distance', done:false },
+      { week:32, goal:'Pace under 10:30/mi on easy runs', done:false },
+      { week:40, goal:'Pace target achieved — race ready', done:false },
+      { week:47, goal:'🏅 RACE DAY — 26.2 miles!', done:false },
+    ],
+  },
+
+  fitness: {
+    id: 'fitness',
+    label: 'General Fitness',
+    emoji: '💪',
+    tagline: 'Get consistently active. Feel better.',
+    desc: 'A balanced plan mixing cardio and strength for overall health.',
+    color: '#60a5fa',
+    defaultWeeks: 24,
+    defaultPace: '14:00',
+    scienceNote: 'Based on ACSM\'s physical activity guidelines: 150 min/week moderate-intensity cardio or 75 min vigorous-intensity, plus 2 days/week resistance training targeting all major muscle groups (ACSM, 2022). Progressive overload principle applied to both cardio and strength.',
+    phases: [
+      { id:1, name:'Habit',    pct:[0,0.33], color:'#4ade80', goal:'Build the exercise habit. 3–4 days active per week consistently.', weeklyMiles:'8–12 mi/wk' },
+      { id:2, name:'Progress', pct:[0.33,0.67],color:'#facc15', goal:'Increase cardio duration and strength loads. Add variety.', weeklyMiles:'12–18 mi/wk' },
+      { id:3, name:'Lifestyle',pct:[0.67,1],  color:'#60a5fa', goal:'Fitness is a habit now. Maintain and push personal records.', weeklyMiles:'15–22 mi/wk' },
+    ],
+    milestones: [
+      { week:2,  goal:'Complete 2 full weeks without missing a workout day', done:false },
+      { week:6,  goal:'Run 30 minutes continuously at an easy pace', done:false },
+      { week:10, goal:'Complete 150 min of cardio in a single week (ACSM target)', done:false },
+      { week:16, goal:'Noticeable strength improvement — more reps than week 1', done:false },
+      { week:20, goal:'Run a 5K — a fitness milestone worth celebrating', done:false },
+      { week:24, goal:'🏅 24 weeks of consistent training — lifestyle changed', done:false },
+    ],
+  },
+};
+
+// Default run day task for C25K — walk/run intervals
+const C25K_RUN_TASKS = [
+  'Warm-up: 5 min brisk walk',
+  'Alternate: run 1 min / walk 90 sec × 8 rounds (Week 1–2)',
+  'Progress to: run 3 min / walk 3 min × 5 rounds (Week 3–4)',
+  'Progress to: run 5 min / walk 3 min × 3 rounds (Week 5)',
+  'Progress to: run 20 min continuously (Week 5+)',
+  'Cool-down: 5 min walk',
+  'Note: Never increase total running time more than 10% per week',
+];
