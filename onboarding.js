@@ -366,7 +366,7 @@ const MarathonOnboarding = {
     this._render(`
       <div class="ob-header">
         <div class="ob-logo">🎯</div>
-        <h1 class="ob-title">Almost ready, ${this._draft.name || 'Runner'}!</h1>
+        <h1 class="ob-title">Almost ready, ${(this._draft.name||'Runner').slice(0,60).replace(/[<>&]/g,'').replace(/"/g,'&quot;')}!</h1>
         <p class="ob-sub">How would you like to save your progress?</p>
       </div>
       <div class="ob-choice-cards">

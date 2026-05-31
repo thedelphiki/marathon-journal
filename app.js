@@ -234,6 +234,20 @@ function customizeMealItems(items) {
 // Generates a 7-day schedule based on the user's chosen rest days.
 // Remaining days are filled with runs and calisthenics intelligently.
 
+
+// ── SECURITY: Sanitize user input before inserting into HTML ─────
+function sanitizeHTML(str) {
+  if (!str) return '';
+  return String(str)
+    .slice(0, 500)  // hard cap at 500 chars
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;');
+}
+
+
 const ALL_DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
 
 const DAY_TYPES = {
@@ -785,7 +799,7 @@ function renderLog() {
   html += `<div><div style="font-size:11px;color:#475569;margin-bottom:4px">Date</div><input type="date" id="lf_date" value="${f.date}" oninput="updateLogForm('date',this.value)" style="${iStyle}"></div>`;
   html += `<div><div style="font-size:11px;color:#475569;margin-bottom:4px">Distance (miles)</div><input type="number" step="0.1" id="lf_dist" value="${f.distance}" placeholder="3.1" oninput="updateLogForm('distance',this.value);updatePacePreview()" style="${iStyle}"></div>`;
   html += `<div><div style="font-size:11px;color:#475569;margin-bottom:4px">Time (mm:ss)</div><input type="text" id="lf_time" value="${f.time}" placeholder="38:00" oninput="updateLogForm('time',this.value);updatePacePreview()" style="${iStyle}"></div>`;
-  html += `<div><div style="font-size:11px;color:#475569;margin-bottom:4px">Notes</div><input type="text" id="lf_notes" value="${f.notes.replace(/"/g,'&quot;')}" placeholder="Felt good, humid..." oninput="updateLogForm('notes',this.value)" style="${iStyle}"></div>`;
+  html += `<div><div style="font-size:11px;color:#475569;margin-bottom:4px">Notes</div><input type="text" id="lf_notes" value="${f.notes.replace(/"/g,'&quot;')}" placeholder="Felt good, humid..." maxlength="300" oninput="updateLogForm('notes',this.value)" style="${iStyle}"></div>`;
   html += `</div>`;
   html += `<div id="pace-preview">${pacePreview}</div>`;
   html += `<button onclick="addRun()" style="background:#4ade80;color:#0a0f1a;border:none;border-radius:6px;padding:10px 20px;font-size:13px;cursor:pointer;font-family:Georgia,serif">+ Add Run</button></div>`;
@@ -801,7 +815,7 @@ function renderLog() {
       html += `<div>
         <div style="font-size:13px;color:#94a3b8">${r.date}</div>
         <div style="font-size:15px;color:#f8fafc;margin-top:2px">${r.distance} miles${r.time ? ' · ' + r.time : ''}${pace ? ` <span style="color:#4ade80;font-size:13px">· ${pace}</span>` : ''}</div>
-        ${r.notes ? `<div style="font-size:12px;color:#475569;margin-top:2px">${r.notes}</div>` : ''}
+        ${r.notes ? `<div style="font-size:12px;color:#475569;margin-top:2px">${sanitizeHTML(r.notes)}</div>` : ''}
       </div>`;
       html += `<div style="display:flex;align-items:center;gap:8px"><span style="font-size:22px">🏃</span><button onclick="deleteRun(${idx})" style="background:none;border:1px solid #334155;color:#475569;border-radius:4px;padding:4px 8px;font-size:11px;cursor:pointer">✕</button></div></div>`;
     });
@@ -878,13 +892,13 @@ function render() {
   // Gear menu + sync icon — fixed top-right corner, stacked vertically
   const gearMenuHtml = `
     <div id="gear-wrapper" style="position:fixed;top:12px;right:14px;z-index:600;display:flex;flex-direction:column;align-items:center;gap:6px">
-      <button id="profile-btn" onclick="toggleGearMenu(event)" title="${profile.name || 'Menu'}"
+      <button id="profile-btn" onclick="toggleGearMenu(event)" title="${sanitizeHTML(profile.name) || 'Menu'}"
         style="width:38px;height:38px;border-radius:50%;background:#1e293b;border:1px solid #334155;color:#94a3b8;font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:Georgia,serif;box-shadow:0 2px 8px rgba(0,0,0,0.4)">
         ⚙
       </button>
       ${syncIcon}
       <div id="gear-menu" style="display:none;position:absolute;top:calc(100% + 4px);right:0;background:#0f172a;border:1px solid #1e293b;border-radius:10px;padding:6px;min-width:190px;z-index:601;box-shadow:0 8px 24px rgba(0,0,0,0.6)">
-        <div style="font-size:11px;color:#475569;padding:6px 12px 4px;letter-spacing:0.06em;text-transform:uppercase">${profile.name || 'Profile'}</div>
+        <div style="font-size:11px;color:#475569;padding:6px 12px 4px;letter-spacing:0.06em;text-transform:uppercase">${sanitizeHTML(profile.name) || 'Profile'}</div>
         <div style="border-top:1px solid #1e293b;margin:4px 0"></div>
         <button onclick="closeGearMenu();window.MarathonProfile.showProfileModal()" class="gear-item">✏️ Edit Profile</button>
         <button onclick="closeGearMenu();if(window.MarathonTour)MarathonTour.showDirect()" class="gear-item">🗺️ Take a Tour</button>
@@ -1017,17 +1031,15 @@ function closeGearMenu() {
 }
 
 function handleSignOut() {
-  if (confirm('Sign out and return to the welcome screen?')) {
-    // Clear local profile so onboarding triggers again
+  const isGuest = !window.isFirebaseConfigured || !firebase.auth().currentUser;
+  const guestWarning = isGuest
+    ? '\n\n⚠️ You are a guest — signing out will clear all your local progress permanently. Consider exporting a backup first.'
+    : '';
+  if (confirm('Sign out and return to the welcome screen?' + guestWarning)) {
     localStorage.removeItem('road2262_profile_v1');
     localStorage.removeItem('road2262_onboarded_v1');
-    // Sign out of Firebase if logged in
     if (window.isFirebaseConfigured && firebase.auth().currentUser) {
-      firebase.auth().signOut().then(() => {
-        location.reload();
-      }).catch(() => {
-        location.reload();
-      });
+      firebase.auth().signOut().then(() => { location.reload(); }).catch(() => { location.reload(); });
     } else {
       location.reload();
     }
@@ -1094,7 +1106,15 @@ function updatePacePreview() {
 
 function addRun() {
   if (!STATE.logForm.date || !STATE.logForm.distance) return;
-  STATE.runLog.push({...STATE.logForm, id: Date.now()});
+  // Sanitize and cap inputs before storing
+  const safeEntry = {
+    id:       Date.now(),
+    date:     String(STATE.logForm.date).slice(0, 20),
+    distance: String(parseFloat(STATE.logForm.distance) || 0).slice(0, 10),
+    time:     String(STATE.logForm.time || '').replace(/[^0-9:]/g,'').slice(0, 10),
+    notes:    String(STATE.logForm.notes || '').slice(0, 300),
+  };
+  STATE.runLog.push(safeEntry);
   STATE.logForm = {date:'', distance:'', time:'', notes:''};
   persist();
   STATE.saveMsg = '✓ Run logged!';

@@ -85,11 +85,16 @@ const MarathonAuth = {
       if (subtitle) subtitle.textContent = "Sign up to sync your marathon log across all your devices.";
       if (submitBtn) submitBtn.textContent = "Create Account";
       if (switchDiv) switchDiv.innerHTML = `Already have an account? <a class="auth-switch-link" onclick="window.MarathonAuth.toggleAuthMode()">Log In</a>`;
+      // Show password requirements hint
+      const hint = document.getElementById('auth-password-hint');
+      if (hint) hint.style.display = 'block';
     } else {
       if (title) title.textContent = "Cloud Sync Login";
       if (subtitle) subtitle.textContent = "Log in to load your saved checklists and runs.";
       if (submitBtn) submitBtn.textContent = "Log In";
       if (switchDiv) switchDiv.innerHTML = `Don't have an account? <a class="auth-switch-link" onclick="window.MarathonAuth.toggleAuthMode()">Sign Up</a>`;
+      const hint = document.getElementById('auth-password-hint');
+      if (hint) hint.style.display = 'none';
     }
   },
 
@@ -109,6 +114,19 @@ const MarathonAuth = {
     submitBtn.disabled = true;
 
     if (this.isSignUpMode) {
+      // Enforce password strength before sending to Firebase
+      if (password.length < 8) {
+        statusDiv.style.color = '#f87171';
+        statusDiv.textContent = 'Password must be at least 8 characters.';
+        submitBtn.disabled = false;
+        return;
+      }
+      if (!/[A-Z]/.test(password) || !/[0-9]/.test(password)) {
+        statusDiv.style.color = '#f87171';
+        statusDiv.textContent = 'Password must include at least one uppercase letter and one number.';
+        submitBtn.disabled = false;
+        return;
+      }
       // Create New Account
       firebase.auth().createUserWithEmailAndPassword(email, password)
         .then((userCredential) => {
