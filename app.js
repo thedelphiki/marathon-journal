@@ -319,29 +319,98 @@ const DAY_TYPES = {
       "Review last week's progress and plan the week ahead",
       'Celebrate your progress — you earned this rest',
     ]
+  },
+  weightlifting: {
+    type: 'WEIGHTLIFTING', emoji: '🏋️', color: '#f97316',
+    tasks: [
+      'Warm-up: 5–10 min light cardio + dynamic stretches',
+      'Compound lifts: squat, bench press, or deadlift — 4×5 heavy sets',
+      'Accessory work: rows, shoulder press, lunges — 3×10',
+      'Core: cable crunches or weighted planks — 3×15',
+      'Cool-down: 10 min stretch, focus on worked muscles',
+      'Post-workout protein within 30 min (shake or lean meal)',
+    ]
+  },
+  weightlifting2: {
+    type: 'WEIGHTLIFTING – Upper', emoji: '🏋️', color: '#f97316',
+    tasks: [
+      'Warm-up: band pull-aparts + arm circles',
+      'Bench press or DB press: 4×6–8',
+      'Barbell or DB row: 4×8',
+      'Overhead press: 3×10',
+      'Bicep curls + tricep pushdowns: 3×12 each',
+      'Cool-down + protein within 30 min',
+    ]
+  },
+  combinedStrength: {
+    type: 'STRENGTH – Mixed', emoji: '⚡', color: '#a78bfa',
+    tasks: [
+      'Warm-up: 5 min jumping jacks + arm circles',
+      'Barbell or DB compound lift: squat or deadlift — 3×6',
+      'Push-ups to failure: 3 sets',
+      'Weighted rows or pull-ups: 3×8',
+      'Core circuit: plank 3×45s, dead bugs 3×10',
+      'Bodyweight finisher: 3×10 lunges + 3×10 glute bridges',
+      'Cool-down + protein within 30 min',
+    ]
+  },
+  cycling: {
+    type: 'CYCLING', emoji: '🚴', color: '#22d3ee',
+    tasks: [
+      'Pre-ride snack 30 min before (banana or toast + PB)',
+      'Electrolyte drink before & during',
+      'Phase 1: 30–45 min easy pace | Phase 2: 45–60 min | Phase 3: 60–90 min',
+      'Maintain cadence 80–100 rpm for aerobic benefit',
+      'Cool-down: 5 min easy spin + leg stretches',
+      'Log distance or time and how legs felt',
+    ]
   }
 };
 
 function generateWeekSchedule() {
-  const profile     = window.MarathonProfile ? window.MarathonProfile.state : {};
-  const restDays    = (profile.restDays    && profile.restDays.length)    ? profile.restDays    : ['Thursday','Saturday'];
-  const runDays     = (profile.runDays     && profile.runDays.length)     ? profile.runDays     : ['Tuesday','Wednesday','Sunday'];
-  const workoutDays = (profile.workoutDays && profile.workoutDays.length) ? profile.workoutDays : ['Monday','Friday'];
+  const profile      = window.MarathonProfile ? window.MarathonProfile.state : {};
+  const restDays     = (profile.restDays    && profile.restDays.length)    ? profile.restDays    : ['Thursday','Saturday'];
+  const cardDays     = (profile.cardDays    && profile.cardDays.length)    ? profile.cardDays    : ['Sunday','Tuesday','Wednesday'];
+  const workoutDays  = (profile.workoutDays && profile.workoutDays.length) ? profile.workoutDays : ['Monday','Friday'];
+  const strengthType = profile.strengthType || 'calisthenics';
+  const cardioType   = profile.cardioType   || 'running';
+
+  // Resolve which workout type keys to use based on user preferences
+  let workoutKeys;
+  if (strengthType === 'calisthenics') {
+    workoutKeys = ['upperBody','lowerCore'];
+  } else if (strengthType === 'weights') {
+    workoutKeys = ['weightlifting','weightlifting2'];
+  } else {
+    // both: alternate combined strength sessions
+    workoutKeys = ['combinedStrength','combinedStrength'];
+  }
 
   const assignments = {};
   ALL_DAYS.forEach(d => { assignments[d] = 'rest'; });
 
-  // Assign run types — last run day gets long run, second-to-last gets tempo, rest get easy
-  const sortedRun = ALL_DAYS.filter(d => runDays.includes(d));
-  sortedRun.forEach((d, i) => {
-    if (i === sortedRun.length - 1) assignments[d] = 'longRun';
-    else if (i === sortedRun.length - 2 && sortedRun.length > 1) assignments[d] = 'tempoRun';
-    else assignments[d] = 'easyRun';
+  // Assign cardio days — last = long run, second-to-last = tempo/intervals, rest = easy/cycle
+  const sortedCardio = ALL_DAYS.filter(d => cardDays.includes(d));
+  sortedCardio.forEach((d, i) => {
+    if (i === sortedCardio.length - 1) {
+      assignments[d] = 'longRun';
+    } else if (i === sortedCardio.length - 2 && sortedCardio.length > 1) {
+      assignments[d] = 'tempoRun';
+    } else {
+      // If running+cycling, alternate easy run and cycling
+      if (cardioType === 'running+cycling' && i % 2 === 1) {
+        assignments[d] = 'cycling';
+      } else {
+        assignments[d] = 'easyRun';
+      }
+    }
   });
 
-  // Assign calisthenics — alternate upper/lower body
+  // Assign workout days — alternate between the two workout keys
   const sortedWork = ALL_DAYS.filter(d => workoutDays.includes(d));
-  sortedWork.forEach((d, i) => { assignments[d] = i % 2 === 0 ? 'upperBody' : 'lowerCore'; });
+  sortedWork.forEach((d, i) => {
+    assignments[d] = workoutKeys[i % workoutKeys.length];
+  });
 
   // Rest days override everything
   restDays.forEach(d => { assignments[d] = 'rest'; });

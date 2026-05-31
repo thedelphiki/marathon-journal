@@ -83,54 +83,18 @@ const MarathonOnboarding = {
     this.showStep2();
   },
 
-  // ── STEP 2: Training Details ───────────────────────────────────
+  // ── STEP 2: Pace, Dates, Climate, Diet ──────────────────────
   showStep2: function() {
     const today = new Date();
     const todayStr = today.toISOString().split('T')[0];
     const raceDefault = new Date(today);
     raceDefault.setDate(today.getDate() + 47 * 7);
     const raceDateStr = raceDefault.toISOString().split('T')[0];
-
-    // Default selections
-    const defRest    = this._draft.restDays    || ['Thursday','Saturday'];
-    const defRun     = this._draft.runDays     || ['Sunday','Tuesday','Wednesday'];
-    const defWorkout = this._draft.workoutDays || ['Monday','Friday'];
-
-    const shorts = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-    const fulls  = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
-
-    const dayRow = (idPrefix, selectedDays, color) => shorts.map((d,i) => {
-      const full   = fulls[i];
-      const active = selectedDays.includes(full);
-      return `<button type="button"
-        onclick="MarathonOnboarding.toggleDay('${idPrefix}','${full}',this)"
-        data-day="${full}" data-picker="${idPrefix}"
-        style="flex:1;min-width:0;aspect-ratio:1;border-radius:50%;
-          border:2px solid ${active ? color : '#334155'};
-          background:${active ? color+'22' : 'transparent'};
-          color:${active ? color : '#475569'};font-size:11px;cursor:pointer;
-          font-family:system-ui,sans-serif;transition:all 0.15s;
-          font-weight:${active ? 'bold' : 'normal'};padding:0;line-height:1"
-      >${d}</button>`;
-    }).join('');
-
-    const pickerBlock = (idPrefix, label, hint, selectedDays, color) => `
-      <div class="ob-field" style="grid-column:1/-1;margin-top:6px">
-        <label class="ob-label" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-          <span>${label}</span>
-          <span style="color:#475569;font-size:10px;text-transform:none;letter-spacing:0;font-weight:normal">${hint}</span>
-        </label>
-        <div style="display:flex;gap:5px;width:100%" id="ob-${idPrefix}-picker">
-          ${dayRow(idPrefix, selectedDays, color)}
-        </div>
-        <input type="hidden" id="ob-${idPrefix}-days" value='${JSON.stringify(selectedDays)}'>
-      </div>`;
-
     this._render(`
       <div class="ob-header">
         <div class="ob-logo">📋</div>
-        <h1 class="ob-title">Your Training Plan</h1>
-        <p class="ob-sub">Tell us your pace, schedule, and goals.</p>
+        <h1 class="ob-title">Training Details</h1>
+        <p class="ob-sub">Tell us your current pace and race goal.</p>
       </div>
       <form onsubmit="MarathonOnboarding.submitStep2(event)">
         <div class="ob-grid">
@@ -141,14 +105,6 @@ const MarathonOnboarding = {
           <div class="ob-field">
             <label class="ob-label">Target Marathon Pace</label>
             <input type="text" id="ob-racePace" class="ob-input" placeholder="09:55" value="${this._draft.targetMarathonPace||'09:55'}" required>
-          </div>
-          <div class="ob-field">
-            <label class="ob-label">Training Start Date</label>
-            <input type="date" id="ob-start" class="ob-input" value="${todayStr}" required>
-          </div>
-          <div class="ob-field">
-            <label class="ob-label">Target Race Date</label>
-            <input type="date" id="ob-race" class="ob-input" value="${raceDateStr}" required>
           </div>
           <div class="ob-field">
             <label class="ob-label">Training Climate</label>
@@ -168,12 +124,15 @@ const MarathonOnboarding = {
               <option value="gluten-free">Gluten-Free</option>
             </select>
           </div>
-          ${pickerBlock('rest',    'Rest Days',    'max 3 · days you cannot train', defRest,    '#60a5fa')}
-          ${pickerBlock('run',     'Run Days',     'max 4 · easy, tempo & long run', defRun,     '#4ade80')}
-          ${pickerBlock('workout', 'Workout Days', 'max 3 · upper & lower body',    defWorkout, '#a78bfa')}
-          <p style="font-size:11px;color:#475569;grid-column:1/-1;margin-top:4px;line-height:1.5">
-            Selecting a day in one row greys it out in the others. Unassigned days become rest.
-          </p>
+          <!-- Dates: each full width to prevent mobile overlap -->
+          <div class="ob-field" style="grid-column:1/-1">
+            <label class="ob-label">Training Start Date</label>
+            <input type="date" id="ob-start" class="ob-input" value="${todayStr}" required>
+          </div>
+          <div class="ob-field" style="grid-column:1/-1">
+            <label class="ob-label">Target Race Date</label>
+            <input type="date" id="ob-race" class="ob-input" value="${raceDateStr}" required>
+          </div>
           <div style="display:flex;gap:10px;grid-column:1/-1;margin-top:6px">
             <button type="button" class="ob-btn ob-btn-back" onclick="MarathonOnboarding.showStep1()">← Back</button>
             <button type="submit" class="ob-btn">Continue →</button>
@@ -184,15 +143,13 @@ const MarathonOnboarding = {
         <span class="ob-dot"></span>
         <span class="ob-dot ob-dot-active"></span>
         <span class="ob-dot"></span>
+        <span class="ob-dot"></span>
       </div>
     `);
-    // Sync cross-greying on load
-    setTimeout(() => MarathonOnboarding._syncPickerButtons(), 0);
   },
 
   submitStep2: function(e) {
     e.preventDefault();
-    const getJSON = (id, def) => { try { return JSON.parse(document.getElementById(id)?.value || def); } catch(e) { return JSON.parse(def); } };
     this._draft = {
       ...this._draft,
       currentEasyPace:    document.getElementById('ob-easyPace').value.trim(),
@@ -201,26 +158,161 @@ const MarathonOnboarding = {
       raceDate:           document.getElementById('ob-race').value,
       climate:            document.getElementById('ob-climate').value,
       diet:               document.getElementById('ob-diet').value,
-      restDays:           getJSON('ob-rest-days',    '["Thursday","Saturday"]'),
-      runDays:            getJSON('ob-run-days',     '["Sunday","Tuesday","Wednesday"]'),
-      workoutDays:        getJSON('ob-workout-days', '["Monday","Friday"]'),
+    };
+    this.showStep2b();
+  },
+
+  // ── STEP 2b: Workout Style + Schedule ─────────────────────────
+  showStep2b: function() {
+    const defRest    = this._draft.restDays    || ['Thursday','Saturday'];
+    const defCardio  = this._draft.cardDays    || ['Sunday','Tuesday','Wednesday'];
+    const defWorkout = this._draft.workoutDays || ['Monday','Friday'];
+    const defStr     = this._draft.strengthType || 'calisthenics';
+    const defCard    = this._draft.cardioType   || 'running';
+
+    const shorts = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+    const fulls  = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+
+    const dayRow = (idPrefix, selectedDays, color) => shorts.map((d,i) => {
+      const full   = fulls[i];
+      const active = selectedDays.includes(full);
+      return `<button type="button"
+        onclick="MarathonOnboarding.toggleDay('${idPrefix}','${full}',this)"
+        data-day="${full}" data-picker="${idPrefix}"
+        style="flex:1;min-width:0;aspect-ratio:1;border-radius:50%;
+          border:2px solid ${active ? color : '#334155'};
+          background:${active ? color+'22' : 'transparent'};
+          color:${active ? color : '#475569'};font-size:11px;cursor:pointer;
+          font-family:system-ui,sans-serif;transition:all 0.15s;
+          font-weight:${active ? 'bold' : 'normal'};padding:0;line-height:1"
+      >${d}</button>`;
+    }).join('');
+
+    const typeCard = (groupId, value, label, icon, currentVal, color) => {
+      const active = currentVal === value;
+      return `<div onclick="MarathonOnboarding.selectType('${groupId}','${value}')"
+        id="ob-tc-${groupId}-${value}"
+        style="flex:1;min-width:0;background:${active ? color+'18' : 'transparent'};
+          border:2px solid ${active ? color : '#334155'};
+          border-radius:10px;padding:10px 6px;text-align:center;cursor:pointer;transition:all 0.15s">
+        <div style="font-size:20px;margin-bottom:5px">${icon}</div>
+        <div style="font-size:11px;color:${active ? color : '#94a3b8'};font-weight:${active ? 'bold' : 'normal'};line-height:1.3">${label}</div>
+        <input type="radio" name="${groupId}" value="${value}" ${active ? 'checked' : ''} style="display:none" id="ob-radio-${groupId}-${value}">
+      </div>`;
+    };
+
+    this._render(`
+      <div class="ob-header">
+        <div class="ob-logo">💪</div>
+        <h1 class="ob-title">Workout Style & Schedule</h1>
+        <p class="ob-sub">How do you like to train? Pick your style and assign your days.</p>
+      </div>
+      <form onsubmit="MarathonOnboarding.submitStep2b(event)" style="max-height:70vh;overflow-y:auto;padding-right:4px">
+
+        <div style="font-size:11px;color:#4ade80;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px">Strength Training</div>
+        <div style="display:flex;gap:8px;margin-bottom:14px">
+          ${typeCard('strengthType','calisthenics','Calisthenics','💪',defStr,'#f97316')}
+          ${typeCard('strengthType','weights','Weightlifting','🏋️',defStr,'#f97316')}
+          ${typeCard('strengthType','both','Both','⚡',defStr,'#f97316')}
+        </div>
+
+        <div style="font-size:11px;color:#4ade80;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px">Cardio Style</div>
+        <div style="display:flex;gap:8px;margin-bottom:14px">
+          ${typeCard('cardioType','running','Running Only','🏃',defCard,'#4ade80')}
+          ${typeCard('cardioType','running+cycling','Run + Cycle','🚴',defCard,'#4ade80')}
+        </div>
+
+        <div style="font-size:11px;color:#4ade80;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px">Weekly Schedule</div>
+
+        <div style="margin-bottom:10px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <span style="font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:0.06em">Rest Days</span>
+            <span style="font-size:10px;color:#475569">max 3</span>
+          </div>
+          <div style="display:flex;gap:5px;width:100%" id="ob-rest-picker">${dayRow('rest', defRest, '#60a5fa')}</div>
+          <input type="hidden" id="ob-rest-days" value='${JSON.stringify(defRest)}'>
+        </div>
+
+        <div style="margin-bottom:10px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <span style="font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:0.06em">Cardio Days</span>
+            <span style="font-size:10px;color:#475569">max 4</span>
+          </div>
+          <div style="display:flex;gap:5px;width:100%" id="ob-cardio-picker">${dayRow('cardio', defCardio, '#4ade80')}</div>
+          <input type="hidden" id="ob-cardio-days" value='${JSON.stringify(defCardio)}'>
+        </div>
+
+        <div style="margin-bottom:10px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <span style="font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:0.06em">Workout Days</span>
+            <span style="font-size:10px;color:#475569">max 3</span>
+          </div>
+          <div style="display:flex;gap:5px;width:100%" id="ob-workout-picker">${dayRow('workout', defWorkout, '#a78bfa')}</div>
+          <input type="hidden" id="ob-workout-days" value='${JSON.stringify(defWorkout)}'>
+        </div>
+
+        <p style="font-size:11px;color:#475569;margin-bottom:12px;line-height:1.5">
+          Selecting a day in one row greys it out in the others. Unassigned days become rest.
+        </p>
+
+        <div style="display:flex;gap:10px">
+          <button type="button" class="ob-btn ob-btn-back" onclick="MarathonOnboarding.showStep2()">← Back</button>
+          <button type="submit" class="ob-btn">Continue →</button>
+        </div>
+      </form>
+      <div class="ob-step-dots">
+        <span class="ob-dot"></span>
+        <span class="ob-dot"></span>
+        <span class="ob-dot ob-dot-active"></span>
+        <span class="ob-dot"></span>
+      </div>
+    `);
+    setTimeout(() => MarathonOnboarding._syncPickerButtons(), 0);
+  },
+
+  submitStep2b: function(e) {
+    e.preventDefault();
+    const getJSON = (id, def) => { try { return JSON.parse(document.getElementById(id)?.value || def); } catch(err) { return JSON.parse(def); } };
+    const getRadio = (name, def) => { const el = document.querySelector(`input[name="${name}"]:checked`); return el ? el.value : def; };
+    this._draft = {
+      ...this._draft,
+      strengthType: getRadio('strengthType', 'calisthenics'),
+      cardioType:   getRadio('cardioType',   'running'),
+      restDays:     getJSON('ob-rest-days',    '["Thursday","Saturday"]'),
+      cardDays:     getJSON('ob-cardio-days',  '["Sunday","Tuesday","Wednesday"]'),
+      workoutDays:  getJSON('ob-workout-days', '["Monday","Friday"]'),
     };
     this.showStep3();
+  },
+
+  selectType: function(groupId, value) {
+    const radio = document.getElementById(`ob-radio-${groupId}-${value}`);
+    if (radio) radio.checked = true;
+    const colors   = { strengthType: '#f97316', cardioType: '#4ade80' };
+    const color    = colors[groupId] || '#4ade80';
+    const variants = groupId === 'strengthType' ? ['calisthenics','weights','both'] : ['running','running+cycling'];
+    variants.forEach(v => {
+      const card = document.getElementById(`ob-tc-${groupId}-${v}`);
+      if (!card) return;
+      const active = v === value;
+      card.style.background  = active ? color+'18' : 'transparent';
+      card.style.borderColor = active ? color : '#334155';
+      const lbl = card.querySelectorAll('div')[1];
+      if (lbl) { lbl.style.color = active ? color : '#94a3b8'; lbl.style.fontWeight = active ? 'bold' : 'normal'; }
+    });
   },
 
   toggleDay: function(pickerPrefix, day, btn) {
     const input = document.getElementById(`ob-${pickerPrefix}-days`);
     if (!input) return;
     let days = JSON.parse(input.value || '[]');
-    const isActive = days.includes(day);
-    const maxes = { rest:3, run:4, workout:3 };
-    if (isActive) {
+    const maxes = { rest:3, cardio:4, workout:3 };
+    if (days.includes(day)) {
       days = days.filter(d => d !== day);
       input.value = JSON.stringify(days);
     } else {
       if (days.length >= (maxes[pickerPrefix]||3)) return;
-      // Block if claimed by another picker
-      for (const other of ['rest','run','workout']) {
+      for (const other of ['rest','cardio','workout']) {
         if (other === pickerPrefix) continue;
         const o = document.getElementById(`ob-${other}-days`);
         if (o && JSON.parse(o.value||'[]').includes(day)) return;
@@ -232,14 +324,14 @@ const MarathonOnboarding = {
   },
 
   _syncPickerButtons: function() {
-    const colors = { rest:'#60a5fa', run:'#4ade80', workout:'#a78bfa' };
+    const colors = { rest:'#60a5fa', cardio:'#4ade80', workout:'#a78bfa' };
     const claimed = {};
-    ['rest','run','workout'].forEach(p => {
+    ['rest','cardio','workout'].forEach(p => {
       const inp = document.getElementById(`ob-${p}-days`);
       if (!inp) return;
       JSON.parse(inp.value||'[]').forEach(d => { claimed[d] = p; });
     });
-    ['rest','run','workout'].forEach(p => {
+    ['rest','cardio','workout'].forEach(p => {
       const picker = document.getElementById(`ob-${p}-picker`);
       if (!picker) return;
       const owned = JSON.parse(document.getElementById(`ob-${p}-days`)?.value||'[]');
@@ -265,10 +357,10 @@ const MarathonOnboarding = {
     });
   },
 
-  // (old toggleRestDay kept for safety but no longer used)
-  toggleRestDay: function(day, btn) {},
+  // (legacy stubs)
+  toggleRestDay: function() {},
 
-    // ── STEP 3: Account or Guest ───────────────────────────────────
+      // ── STEP 3: Account or Guest ───────────────────────────────────
   showStep3: function() {
     const firebaseReady = window.isFirebaseConfigured;
     this._render(`
@@ -292,6 +384,7 @@ const MarathonOnboarding = {
       </div>
       <button type="button" class="ob-btn ob-btn-back" style="margin-top:16px;max-width:120px" onclick="MarathonOnboarding.showStep2()">← Back</button>
       <div class="ob-step-dots">
+        <span class="ob-dot"></span>
         <span class="ob-dot"></span>
         <span class="ob-dot"></span>
         <span class="ob-dot ob-dot-active"></span>
