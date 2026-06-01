@@ -25,9 +25,6 @@ try {
 } catch (error) {
   console.error("Firebase initialization failed:", error);
 }
-if (isFirebaseConfigured) {
-  const appCheck = firebase.appCheck();
-  appCheck.activate('6LdOnQYtAAAAAF1QJWEQv2ZfCuUDnU-S5fof9iJ0', true);
-}
+
 // Make configuration status accessible globally
 window.isFirebaseConfigured = isFirebaseConfigured;

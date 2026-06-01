@@ -716,3 +716,10 @@ const C25K_RUN_TASKS = [
   'Cool-down: 5 min walk',
   'Note: Never increase total running time more than 10% per week',
 ];
+
+// Expose to global scope for use in profile.js and app.js
+window.TRAINING_GOALS = TRAINING_GOALS;
+window.MEAL_PLAN = MEAL_PLAN;
+window.DEFAULT_MILESTONES = DEFAULT_MILESTONES;
+window.WEEKLY_TEMPLATE = typeof WEEKLY_TEMPLATE !== 'undefined' ? WEEKLY_TEMPLATE : [];
+

@@ -122,16 +122,17 @@ const MarathonProfile = {
 
 
   selectGoal: function(goalId) {
-    const g = window.TRAINING_GOALS && TRAINING_GOALS[goalId];
+    const goals = window.TRAINING_GOALS || {};
+    const g = goals[goalId];
     if (!g) return;
     // Update radio
     const radio = document.querySelector(`input[name="trainingGoal"][value="${goalId}"]`);
     if (radio) radio.checked = true;
     // Update card styles
-    Object.keys(TRAINING_GOALS).forEach(id => {
+    Object.keys(goals).forEach(id => {
       const card = document.getElementById('pg-' + id);
       if (!card) return;
-      const goal = TRAINING_GOALS[id];
+      const goal = goals[id];
       const active = id === goalId;
       card.style.background  = active ? goal.color+'18' : '#060a12';
       card.style.borderColor = active ? goal.color : '#334155';
@@ -255,7 +256,7 @@ const MarathonProfile = {
           <!-- SECTION: Training Goal -->
           <div style="font-size:10px;color:#4ade80;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:8px">Training Goal</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
-            ${Object.values(TRAINING_GOALS).map(g => {
+            ${Object.values(window.TRAINING_GOALS || {}).map(g => {
               const active = s.trainingGoal === g.id;
               return `<div onclick="MarathonProfile.selectGoal('${g.id}')" id="pg-${g.id}"
                 style="background:${active ? g.color+'18' : '#060a12'};border:2px solid ${active ? g.color : '#334155'};
@@ -339,7 +340,7 @@ const MarathonProfile = {
       const el = document.querySelector(`input[name="${name}"]:checked`);
       return el ? el.value : def;
     };
-    this.save({
+    const newState = {
       name:               document.getElementById('prof-name').value.trim(),
       gender:             document.getElementById('prof-gender').value,
       age:                parseInt(document.getElementById('prof-age').value, 10)          || 30,
@@ -358,8 +359,17 @@ const MarathonProfile = {
       restDays:           getJSON('rest-days',    '["Thursday","Saturday"]'),
       cardDays:           getJSON('cardio-days',  '["Sunday","Tuesday","Wednesday"]'),
       workoutDays:        getJSON('workout-days', '["Monday","Friday"]'),
-    });
+    };
+    this.save(newState);
     this.hideProfileModal();
+    // Rebuild milestones for the new goal
+    if (typeof STATE !== 'undefined' && window.TRAINING_GOALS) {
+      const newGoal = window.TRAINING_GOALS[newState.trainingGoal || this.state.trainingGoal];
+      if (newGoal && newGoal.milestones) {
+        STATE.milestones = newGoal.milestones.map(m => ({...m}));
+        if (typeof persist === 'function') persist();
+      }
+    }
   }
 };
 

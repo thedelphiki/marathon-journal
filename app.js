@@ -661,17 +661,61 @@ function renderNutrition() {
   let html = `<h2 style="color:#4ade80;font-weight:normal;font-size:18px;margin-bottom:4px">Personalized Nutrition Plan</h2>
   <p style="color:#475569;font-size:13px;margin-bottom:20px">Calculated targets and recipes matching your dietary rules.</p>`;
   
-  // Custom Calculated Nutrition targets widget
+  // Per-day nutrition targets — calibrated to day type
+  // Science basis: Long run/training days need ~20-30% more carb-driven calories
+  // (Burke et al., 2011 — Carbohydrates for training and competition, J Sports Sci)
+  // Protein constant at 1.6–2.2g/kg bodyweight regardless of day type
+  // (Morton et al., 2018 — A systematic review of protein supplementation, BJSM)
+  const dayLabel = day.label || '';
+  const isLongRun    = dayLabel.toLowerCase().includes('long');
+  const isRestDay    = dayLabel.toLowerCase().includes('rest');
+  const isCardioDay  = dayLabel.toLowerCase().includes('training') || dayLabel.toLowerCase().includes('run');
+  const isWorkout    = dayLabel.toLowerCase().includes('calisth') || dayLabel.toLowerCase().includes('strength') || dayLabel.toLowerCase().includes('weight');
+
+  let dayCalories, calLabel, calColor, calNote;
+  const base    = metrics.caloriesActive || 2300;
+  const restCal = metrics.caloriesRest   || 1900;
+  if (isLongRun) {
+    dayCalories = Math.round(base * 1.18); // ~18% more on long run day
+    calLabel = 'Long Run Day Calories';
+    calColor = '#a78bfa';
+    calNote  = 'Higher carb loading needed before and after. Do not restrict today.';
+  } else if (isRestDay) {
+    dayCalories = restCal;
+    calLabel = 'Rest Day Calories';
+    calColor = '#60a5fa';
+    calNote  = 'Lower activity = lower energy need. Focus on protein and micronutrients.';
+  } else if (isWorkout) {
+    dayCalories = Math.round(base * 1.05); // slight bump for strength work
+    calLabel = 'Workout Day Calories';
+    calColor = '#a78bfa';
+    calNote  = 'Protein priority today. Enough carbs to fuel the session.';
+  } else if (isCardioDay) {
+    dayCalories = base;
+    calLabel = 'Cardio Day Calories';
+    calColor = '#4ade80';
+    calNote  = 'Standard training day fuel. Pre and post-run nutrition matters most.';
+  } else {
+    dayCalories = base;
+    calLabel = 'Training Day Calories';
+    calColor = '#4ade80';
+    calNote  = '';
+  }
+
   html += `
-    <div style="background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:16px;margin-bottom:20px;display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-      <div style="border-right:1px solid #1e293b;padding-right:12px;">
-        <div style="font-size:10px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em;">Training Day Calories</div>
-        <div style="font-size:24px;color:#4ade80;font-weight:bold;margin-top:4px;">~${metrics.caloriesActive || '2400'} <span style="font-size:12px;color:#475569;font-weight:normal;">kcal</span></div>
+    <div style="background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:16px;margin-bottom:12px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:${calNote ? '10px' : '0'}">
+        <div style="border-right:1px solid #1e293b;padding-right:12px">
+          <div style="font-size:10px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em">${calLabel}</div>
+          <div style="font-size:24px;color:${calColor};font-weight:bold;margin-top:4px">~${dayCalories} <span style="font-size:12px;color:#475569;font-weight:normal">kcal</span></div>
+        </div>
+        <div>
+          <div style="font-size:10px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em">Protein Target</div>
+          <div style="font-size:24px;color:#facc15;font-weight:bold;margin-top:4px">${metrics.proteinTarget || '150'} <span style="font-size:12px;color:#475569;font-weight:normal">g</span></div>
+          <div style="font-size:10px;color:#475569;margin-top:3px">constant daily · supports muscle retention</div>
+        </div>
       </div>
-      <div>
-        <div style="font-size:10px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em;">Daily Protein Target</div>
-        <div style="font-size:24px;color:#facc15;font-weight:bold;margin-top:4px;">${metrics.proteinTarget || '150'} <span style="font-size:12px;color:#475569;font-weight:normal;">g</span></div>
-      </div>
+      ${calNote ? `<div style="font-size:11px;color:#64748b;border-top:1px solid #1e293b;padding-top:8px;line-height:1.5">${calNote}</div>` : ''}
     </div>
   `;
 
