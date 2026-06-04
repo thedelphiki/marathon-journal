@@ -8,12 +8,18 @@ const REMEMBER_KEY = 'road2262_remember_v1';
 
 const MarathonLanding = {
 
-  isVisible: false,
+  // Set true immediately at parse time — before DOMContentLoaded fires on any script.
+  // This ensures onboarding/tour guards work even during the async auth check.
+  isVisible: true,
 
   // Called on DOMContentLoaded — decides whether to show landing or go straight to app
   init: function() {
-    // Mark as visible immediately — blocks onboarding/tour from firing during async auth check
-    this.isVisible = true;
+    // isVisible is already true from module initialization above.
+    // Initialize the auth observer NOW — landing is already marked visible,
+    // so any onAuthStateChanged callback will correctly see isVisible=true.
+    if (window.MarathonAuth && typeof MarathonAuth.initObserver === 'function') {
+      MarathonAuth.initObserver();
+    }
 
     // If Firebase not configured, skip landing and go to app
     if (!window.isFirebaseConfigured) {

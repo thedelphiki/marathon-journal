@@ -72,10 +72,9 @@
   <script src="landing.js"></script>
 
   <script>
-    // Init landing page after all scripts load
-    document.addEventListener('DOMContentLoaded', function() {
-      MarathonLanding.init();
-    });
+    // All scripts are loaded — init landing immediately (no DOMContentLoaded needed
+    // since scripts are at end of body and DOM is already parsed).
+    MarathonLanding.init();
   </script>
 
 </body>

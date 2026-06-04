@@ -192,7 +192,9 @@ const MarathonAuth = {
 };
 
 // --- INITIALIZE AUTH OBSERVER ---
-document.addEventListener("DOMContentLoaded", () => {
+// Called explicitly by MarathonLanding after it has initialized,
+// so isVisible is guaranteed true before onAuthStateChanged fires.
+MarathonAuth.initObserver = function() {
   if (window.isFirebaseConfigured) {
     firebase.auth().onAuthStateChanged((user) => {
       const wasLoggedOut = !MarathonAuth.currentUser;
@@ -203,8 +205,7 @@ document.addEventListener("DOMContentLoaded", () => {
         window.MarathonDB.handleUserChange(user);
       }
 
-      // Only re-render and show tour if landing has already been dismissed
-      // (Landing handles the initial auth flow itself)
+      // Only re-render and trigger onboarding/tour if landing is no longer visible
       if (!window.MarathonLanding || !window.MarathonLanding.isVisible) {
         if (typeof render === 'function') render();
 
@@ -222,7 +223,7 @@ document.addEventListener("DOMContentLoaded", () => {
   } else {
     MarathonAuth.updateModalUI();
   }
-});
+};
 
 // Bind to window to allow HTML triggers to hook in
 window.MarathonAuth = MarathonAuth;
