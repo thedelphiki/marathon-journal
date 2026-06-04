@@ -3,74 +3,64 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Road to 26.2 — Marathon Journal</title>
-  
-  <!-- Sleek external stylesheet -->
+  <title>Road to 26.2 — Training Journal</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
-  <!-- Core App Container -->
-  <div id="app"></div>
+  <!-- LANDING PAGE — shown first, hidden once authenticated -->
+  <div id="landing-page">
+    <div id="landing-inner"></div>
+  </div>
 
-  <!-- --- CLOUD SYNC MODAL OVERLAY --- -->
+  <!-- MAIN APP — hidden until authenticated or guest chosen -->
+  <div id="app" style="display:none"></div>
+
+  <!-- CLOUD SYNC MODAL (used when already in app) -->
   <div id="auth-overlay" class="auth-overlay">
     <div class="auth-modal">
       <button class="auth-close" onclick="window.MarathonAuth.hideSyncModal()">✕</button>
-      
       <h2 id="auth-title" class="auth-title">Sync with Cloud</h2>
-      <p id="auth-subtitle" class="auth-subtitle">Log in to save your training progress in the cloud and access it from any device.</p>
-      
-      <!-- Status & Errors Display -->
-      <div id="auth-status" style="font-size: 13px; color: #f87171; margin-bottom: 16px; min-height: 20px; display: none;"></div>
-      
+      <p id="auth-subtitle" class="auth-subtitle">Log in to save your training progress across all your devices.</p>
+      <div id="auth-status" style="font-size:13px;color:#f87171;margin-bottom:16px;min-height:20px;display:none"></div>
       <form id="auth-form" onsubmit="window.MarathonAuth.handleAuthSubmit(event)">
         <div class="auth-group">
           <label class="auth-label" for="auth-email">Email Address</label>
           <input type="email" id="auth-email" class="auth-input" placeholder="runner@example.com" required autocomplete="email">
         </div>
-        
-        <div class="auth-group" style="margin-bottom: 8px;">
+        <div class="auth-group" style="margin-bottom:8px">
           <label class="auth-label" for="auth-password">Password</label>
           <input type="password" id="auth-password" class="auth-input" placeholder="••••••••" required autocomplete="current-password">
           <div id="auth-password-hint" style="display:none;font-size:11px;color:#475569;margin-top:4px;line-height:1.5">
             Min. 8 characters · at least one uppercase letter · at least one number
           </div>
         </div>
-        
-        <!-- Forgot Password Toggle -->
-        <div style="text-align: right; margin-bottom: 20px;">
-          <a class="auth-switch-link" style="font-size: 12px; color: #64748b;" onclick="window.MarathonAuth.handleForgotPassword()">Forgot Password?</a>
+        <div style="text-align:right;margin-bottom:20px">
+          <a class="auth-switch-link" style="font-size:12px;color:#64748b" onclick="window.MarathonAuth.handleForgotPassword()">Forgot Password?</a>
         </div>
-        
-        <!-- Info Alert box about data preservation -->
-        <div id="auth-info" style="background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.2); border-radius: 8px; padding: 10px 12px; margin-bottom: 20px; font-size: 12px; color: #93c5fd; line-height: 1.4;">
-          💡 <strong>Offline Progress Safe</strong>: Any logs or checkboxes currently on this device will be automatically merged into your cloud profile upon login.
+        <div id="auth-info" style="background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.2);border-radius:8px;padding:10px 12px;margin-bottom:20px;font-size:12px;color:#93c5fd;line-height:1.4">
+          💡 <strong>Offline Progress Safe</strong>: Any logs or checkboxes on this device will be merged into your cloud profile on login.
         </div>
-        
         <button type="submit" id="auth-btn" class="auth-btn">Log In</button>
       </form>
-      
-      <!-- Logout state display (shown when logged in) -->
-      <div id="auth-logged-in-state" style="display: none; text-align: center;">
-        <div style="font-size: 40px; margin-bottom: 12px;">☁️</div>
-        <p style="font-size: 14px; color: #cbd5e1; margin-bottom: 8px;">You are signed in as:</p>
-        <p id="auth-user-email" style="font-size: 15px; color: #4ade80; font-weight: bold; margin-bottom: 24px; word-break: break-all;"></p>
-        <button class="auth-btn" style="background: #ef4444; color: #fff;" onclick="window.MarathonAuth.handleLogout()">Sign Out</button>
+      <div id="auth-logged-in-state" style="display:none;text-align:center">
+        <div style="font-size:40px;margin-bottom:12px">☁️</div>
+        <p style="font-size:14px;color:#cbd5e1;margin-bottom:8px">You are signed in as:</p>
+        <p id="auth-user-email" style="font-size:15px;color:#4ade80;font-weight:bold;margin-bottom:24px;word-break:break-all"></p>
+        <button class="auth-btn" style="background:#ef4444;color:#fff" onclick="window.MarathonAuth.handleLogout()">Sign Out</button>
       </div>
-      
       <div id="auth-switch" class="auth-switch">
         Don't have an account? <a class="auth-switch-link" onclick="window.MarathonAuth.toggleAuthMode()">Sign Up</a>
       </div>
     </div>
   </div>
 
-  <!-- --- FIREBASE COMPAT SDKs (V10) --- -->
+  <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
-  <!-- --- APPLICATION SCRIPTS --- -->
+  <!-- App scripts -->
   <script src="firebase-config.js"></script>
   <script src="profile.js"></script>
   <script src="data.js"></script>
@@ -79,6 +69,14 @@
   <script src="onboarding.js"></script>
   <script src="tour.js"></script>
   <script src="app.js"></script>
+  <script src="landing.js"></script>
+
+  <script>
+    // Init landing page after all scripts load
+    document.addEventListener('DOMContentLoaded', function() {
+      MarathonLanding.init();
+    });
+  </script>
 
 </body>
 </html>

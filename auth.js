@@ -216,27 +216,24 @@ document.addEventListener("DOMContentLoaded", () => {
       MarathonAuth.currentUser = user;
       MarathonAuth.updateModalUI();
 
-      // Notify DB sync layer to load user data or revert to offline mode
       if (window.MarathonDB && typeof window.MarathonDB.handleUserChange === 'function') {
         window.MarathonDB.handleUserChange(user);
       }
 
-      // Rerender app interface to show corrected Sync Button state
-      if (typeof render === 'function') {
-        render();
-      }
+      // Only re-render and show tour if landing has already been dismissed
+      // (Landing handles the initial auth flow itself)
+      if (!window.MarathonLanding || !window.MarathonLanding.isVisible) {
+        if (typeof render === 'function') render();
 
-      // If user just logged in (transition from logged-out to logged-in):
-      // 1. Check if profile still needs to be completed (new account user)
-      // 2. Otherwise show the tour if they haven't suppressed it
-      if (user && wasLoggedOut) {
-        setTimeout(function() {
-          if (window.MarathonOnboarding && MarathonOnboarding.isIncomplete()) {
-            MarathonOnboarding.maybeShow();
-          } else if (window.MarathonTour && MarathonTour.shouldShow()) {
-            MarathonTour.show();
-          }
-        }, 600);
+        if (user && wasLoggedOut) {
+          setTimeout(function() {
+            if (window.MarathonOnboarding && MarathonOnboarding.isIncomplete()) {
+              MarathonOnboarding.maybeShow();
+            } else if (window.MarathonTour && MarathonTour.shouldShow()) {
+              MarathonTour.show();
+            }
+          }, 600);
+        }
       }
     });
   } else {
