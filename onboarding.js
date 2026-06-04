@@ -572,11 +572,13 @@ const MarathonOnboarding = {
     }
     overlay.innerHTML = `<div class="ob-modal">${html}</div>`;
     overlay.style.display = 'flex';
+    document.body.classList.add('onboarding-open');
   },
 
   _hide: function() {
     const overlay = document.getElementById('onboarding-overlay');
     if (overlay) overlay.style.display = 'none';
+    document.body.classList.remove('onboarding-open');
   }
 };
 

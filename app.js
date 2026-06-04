@@ -1220,16 +1220,17 @@ function getLocalStateForSync() {
 }
 
 // ── INIT ─────────────────────────────────────────────────────────
+// NOTE: render() is NOT called here. MarathonLanding.init() calls _launchApp()
+// which calls render() only after the user has authenticated or chosen guest.
+// This prevents the app from flashing visible behind the landing/onboarding.
 if (window.MarathonProfile) {
-  window.MarathonProfile.load();                  // load saved profile from localStorage FIRST
+  window.MarathonProfile.load();
   window.MarathonProfile.updateCalculatedDefaults();
 }
-// Initialize milestones from goal-specific data if STATE.milestones is empty
+// Pre-populate milestones so they are ready when render() is eventually called
 if (!STATE.milestones || STATE.milestones.length === 0) {
   const goalId = window.MarathonProfile ? window.MarathonProfile.state.trainingGoal : 'marathon';
   const goal = window.TRAINING_GOALS && TRAINING_GOALS[goalId] ? TRAINING_GOALS[goalId] : null;
   STATE.milestones = ((goal && goal.milestones) ? goal.milestones : DEFAULT_MILESTONES).map(m => ({...m}));
 }
-render();
-
-// Onboarding is triggered by MarathonLanding after login/guest selection — not here.
+// Onboarding and render are triggered by MarathonLanding after login/guest selection.

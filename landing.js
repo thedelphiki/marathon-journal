@@ -12,6 +12,9 @@ const MarathonLanding = {
 
   // Called on DOMContentLoaded — decides whether to show landing or go straight to app
   init: function() {
+    // Mark as visible immediately — blocks onboarding/tour from firing during async auth check
+    this.isVisible = true;
+
     // If Firebase not configured, skip landing and go to app
     if (!window.isFirebaseConfigured) {
       this._launchApp();
