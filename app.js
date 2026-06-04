@@ -1232,9 +1232,4 @@ if (!STATE.milestones || STATE.milestones.length === 0) {
 }
 render();
 
-// Show onboarding to first-time users (after render so app is ready behind it)
-document.addEventListener('DOMContentLoaded', function() {
-  if (window.MarathonOnboarding) {
-    MarathonOnboarding.maybeShow();
-  }
-});
+// Onboarding is triggered by MarathonLanding after login/guest selection — not here.

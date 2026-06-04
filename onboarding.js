@@ -19,6 +19,8 @@ const MarathonOnboarding = {
   // ── STEP 0: Goal Selection ────────────────────────────────────
   // This is the new entry point — routes to correct plan and fitnessLevel
   maybeShow: function() {
+    // Never fire while the landing page is gating access
+    if (window.MarathonLanding && window.MarathonLanding.isVisible) return;
     if (this.isIncomplete()) {
       this.showStep0();
     }

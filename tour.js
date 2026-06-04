@@ -98,6 +98,7 @@ const MarathonTour = {
   currentStep: 0,
 
   shouldShow: function() {
+    if (window.MarathonLanding && window.MarathonLanding.isVisible) return false;
     return !localStorage.getItem(TOUR_SKIP_KEY);
   },
 
