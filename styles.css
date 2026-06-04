@@ -962,3 +962,31 @@ svg rect:hover {
 }
 
 .ld-guest:hover { color: #64748b; }
+
+/* ── LANDING ENTRY BUTTONS ───────────────────────────────────── */
+.ld-entry-btns {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  padding: 4px 0;
+}
+
+.ld-btn-outline {
+  width: 100%;
+  background: transparent;
+  color: #4ade80;
+  border: 2px solid #4ade80;
+  border-radius: 8px;
+  padding: 13px;
+  font-size: 15px;
+  font-family: Georgia, serif;
+  font-weight: normal;
+  cursor: pointer;
+  transition: all 0.15s;
+  letter-spacing: 0.02em;
+}
+
+.ld-btn-outline:hover {
+  background: rgba(74, 222, 128, 0.08);
+}

@@ -102,14 +102,34 @@ const MarathonLanding = {
         </div>
       </div>
 
-      <div class="ld-card" id="ld-card">
-        ${this._loginForm()}
+      <div id="ld-card">
+        <div class="ld-entry-btns">
+          <button class="ld-btn" onclick="MarathonLanding.showLogin()">Log In</button>
+          <button class="ld-btn-outline" onclick="MarathonLanding.showSignup()">Take Your First Step →</button>
+        </div>
       </div>
 
       <button class="ld-guest" onclick="MarathonLanding.continueAsGuest()">
-        Continue without an account →
+        Continue without an account
       </button>
     `;
+  },
+
+  showLogin: function() {
+    const card = document.getElementById('ld-card');
+    if (card) {
+      card.innerHTML = this._loginForm('login');
+      // Scroll to form smoothly on mobile
+      card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  },
+
+  showSignup: function() {
+    // New user — skip login form, go straight to onboarding
+    this._launchApp(null);
+    setTimeout(() => {
+      if (window.MarathonOnboarding) MarathonOnboarding.maybeShow();
+    }, 300);
   },
 
   _loginForm: function(mode) {

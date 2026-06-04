@@ -23,76 +23,54 @@ const MarathonAuth = {
 
   // Update elements dynamically based on connection, login, or registration state
   updateModalUI: function() {
-    const title = document.getElementById('auth-title');
-    const subtitle = document.getElementById('auth-subtitle');
-    const form = document.getElementById('auth-form');
-    const loggedInState = document.getElementById('auth-logged-in-state');
-    const switchDiv = document.getElementById('auth-switch');
-    const submitBtn = document.getElementById('auth-btn');
-    const statusDiv = document.getElementById('auth-status');
-    const infoAlert = document.getElementById('auth-info');
+    const title        = document.getElementById('auth-title');
+    const subtitle     = document.getElementById('auth-subtitle');
+    const form         = document.getElementById('auth-form');
+    const loggedInState= document.getElementById('auth-logged-in-state');
+    const switchDiv    = document.getElementById('auth-switch');
+    const submitBtn    = document.getElementById('auth-btn');
+    const statusDiv    = document.getElementById('auth-status');
+    const infoAlert    = document.getElementById('auth-info');
 
-    // Reset status message
-    if (statusDiv) {
-      statusDiv.style.display = 'none';
-      statusDiv.textContent = '';
-    }
+    if (statusDiv) { statusDiv.style.display = 'none'; statusDiv.textContent = ''; }
 
-    // CASE 1: Firebase is NOT configured yet
-    if (!window.isFirebaseConfigured) {
-      if (title) title.textContent = "Database Setup Required";
-      if (subtitle) subtitle.innerHTML = "To enable cloud sync, you first need to create a free Firebase project. We've set up the code for you — just follow the quick guide in our chat!";
-      if (form) form.style.display = 'none';
-      if (loggedInState) loggedInState.style.display = 'none';
-      if (switchDiv) switchDiv.style.display = 'none';
-      if (infoAlert) {
-        infoAlert.style.background = 'rgba(234, 179, 8, 0.1)';
-        infoAlert.style.border = '1px solid rgba(234, 179, 8, 0.2)';
-        infoAlert.style.color = '#fef08a';
-        infoAlert.innerHTML = `🔑 <strong>Next Step</strong>: Complete Phase 3 in our pairing chat to grab your config keys, paste them into <code>firebase-config.js</code>, and this sync window will instantly unlock!`;
-      }
-      return;
-    }
-
-    // Restore default alert styling
-    if (infoAlert) {
-      infoAlert.style.background = 'rgba(59, 130, 246, 0.1)';
-      infoAlert.style.border = '1px solid rgba(59, 130, 246, 0.2)';
-      infoAlert.style.color = '#93c5fd';
-      infoAlert.innerHTML = `💡 <strong>Offline Progress Safe</strong>: Any logs or checkboxes currently on this device will be automatically merged into your cloud profile upon login.`;
-    }
-
-    // CASE 2: User is logged in
+    // CASE 1: User is already logged in — show account info + sign out
     if (this.currentUser) {
-      if (title) title.textContent = "Syncing Active";
-      if (subtitle) subtitle.textContent = "Your training journal is securely backed up and syncing in real-time across your devices.";
-      if (form) form.style.display = 'none';
+      if (title)       title.textContent  = 'Your Account';
+      if (subtitle)    subtitle.textContent = 'Cloud sync is active. Your progress saves across all devices.';
+      if (form)        form.style.display  = 'none';
       if (loggedInState) loggedInState.style.display = 'block';
-      if (switchDiv) switchDiv.style.display = 'none';
-      
+      if (switchDiv)   switchDiv.style.display = 'none';
+      if (infoAlert)   infoAlert.style.display = 'none';
       const emailDisplay = document.getElementById('auth-user-email');
       if (emailDisplay) emailDisplay.textContent = this.currentUser.email;
       return;
     }
 
-    // CASE 3: Firebase is active, user is logged out (Login vs Sign Up state)
-    if (form) form.style.display = 'block';
+    // CASE 2: Guest or logged-out user — show login/signup form
+    if (form)        form.style.display  = 'block';
     if (loggedInState) loggedInState.style.display = 'none';
-    if (switchDiv) switchDiv.style.display = 'block';
+    if (switchDiv)   switchDiv.style.display = 'block';
+    if (infoAlert) {
+      infoAlert.style.display = 'block';
+      infoAlert.style.background = 'rgba(74,222,128,0.07)';
+      infoAlert.style.border  = '1px solid rgba(74,222,128,0.2)';
+      infoAlert.style.color   = '#86efac';
+      infoAlert.innerHTML     = '💡 <strong>Any progress made as a guest</strong> will be merged into your account when you log in or sign up.';
+    }
 
     if (this.isSignUpMode) {
-      if (title) title.textContent = "Create Cloud Account";
-      if (subtitle) subtitle.textContent = "Sign up to sync your marathon log across all your devices.";
-      if (submitBtn) submitBtn.textContent = "Create Account";
-      if (switchDiv) switchDiv.innerHTML = `Already have an account? <a class="auth-switch-link" onclick="window.MarathonAuth.toggleAuthMode()">Log In</a>`;
-      // Show password requirements hint
+      if (title)     title.textContent     = 'Create Account';
+      if (subtitle)  subtitle.textContent  = 'Sign up to sync your training across all your devices.';
+      if (submitBtn) submitBtn.textContent = 'Create Account';
+      if (switchDiv) switchDiv.innerHTML   = `Already have an account? <a class="auth-switch-link" onclick="window.MarathonAuth.toggleAuthMode()">Log In</a>`;
       const hint = document.getElementById('auth-password-hint');
       if (hint) hint.style.display = 'block';
     } else {
-      if (title) title.textContent = "Cloud Sync Login";
-      if (subtitle) subtitle.textContent = "Log in to load your saved checklists and runs.";
-      if (submitBtn) submitBtn.textContent = "Log In";
-      if (switchDiv) switchDiv.innerHTML = `Don't have an account? <a class="auth-switch-link" onclick="window.MarathonAuth.toggleAuthMode()">Sign Up</a>`;
+      if (title)     title.textContent     = 'Log In';
+      if (subtitle)  subtitle.textContent  = 'Welcome back — your data will sync automatically.';
+      if (submitBtn) submitBtn.textContent = 'Log In';
+      if (switchDiv) switchDiv.innerHTML   = `Don't have an account? <a class="auth-switch-link" onclick="window.MarathonAuth.toggleAuthMode()">Sign Up</a>`;
       const hint = document.getElementById('auth-password-hint');
       if (hint) hint.style.display = 'none';
     }
@@ -101,7 +79,12 @@ const MarathonAuth = {
   // Handle Form Submissions (Login & Signup)
   handleAuthSubmit: function(event) {
     event.preventDefault();
-    if (!window.isFirebaseConfigured) return;
+    if (!window.isFirebaseConfigured) {
+      // Firebase not set up — shouldn't happen in production but handle gracefully
+      const statusDiv = document.getElementById('auth-status');
+      if (statusDiv) { statusDiv.style.display='block'; statusDiv.style.color='#f87171'; statusDiv.textContent='Authentication is not available right now.'; }
+      return;
+    }
 
     const email = document.getElementById('auth-email').value.trim();
     const password = document.getElementById('auth-password').value;
