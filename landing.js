@@ -14,43 +14,31 @@ const MarathonLanding = {
 
   // Called on DOMContentLoaded — decides whether to show landing or go straight to app
   init: function() {
-    // isVisible is already true from module initialization above.
-    // Initialize the auth observer NOW — landing is already marked visible,
-    // so any onAuthStateChanged callback will correctly see isVisible=true.
-    if (window.MarathonAuth && typeof MarathonAuth.initObserver === 'function') {
-      MarathonAuth.initObserver();
-    }
+    // isVisible is true at module level — blocks onboarding before we're ready.
 
-    // If Firebase not configured, skip landing and go to app
+    // If Firebase not configured, skip landing entirely
     if (!window.isFirebaseConfigured) {
+      this.isVisible = false;
       this._launchApp();
       return;
     }
 
-    // Check if user chose "Remember Me" previously
+    // Set Firebase persistence based on Remember Me preference, then start auth observer.
+    // initObserver handles _show() vs _launchApp() on first auth resolution.
     const remembered = localStorage.getItem(REMEMBER_KEY) === 'true';
-
-    // Set Firebase persistence based on remembered preference
     const persistence = remembered
       ? firebase.auth.Auth.Persistence.LOCAL
       : firebase.auth.Auth.Persistence.SESSION;
 
     firebase.auth().setPersistence(persistence).then(() => {
-      // Check if already authenticated
-      firebase.auth().onAuthStateChanged((user) => {
-        if (user && remembered) {
-          // Remembered user — go straight to app
-          this._launchApp(user);
-        } else if (!user) {
-          // No session — show landing
-          this._show();
-        } else {
-          // Session exists but remember not set — still go to app
-          this._launchApp(user);
-        }
-      });
+      if (window.MarathonAuth && typeof MarathonAuth.initObserver === 'function') {
+        MarathonAuth.initObserver();
+      }
     }).catch(() => {
-      this._show();
+      // If persistence fails, still start the observer
+      if (window.MarathonAuth && typeof MarathonAuth.initObserver === 'function') {
+        MarathonAuth.initObserver();
+      }
     });
   },
 

@@ -27,6 +27,8 @@ const MarathonOnboarding = {
   },
 
   showStep0: function() {
+    // Hard guard — never show onboarding while landing page is visible
+    if (window.MarathonLanding && window.MarathonLanding.isVisible) return;
     this._render(`
       <div class="ob-header">
         <div class="ob-logo">🎯</div>

@@ -195,34 +195,52 @@ const MarathonAuth = {
 // Called explicitly by MarathonLanding after it has initialized,
 // so isVisible is guaranteed true before onAuthStateChanged fires.
 MarathonAuth.initObserver = function() {
-  if (window.isFirebaseConfigured) {
-    firebase.auth().onAuthStateChanged((user) => {
-      const wasLoggedOut = !MarathonAuth.currentUser;
-      MarathonAuth.currentUser = user;
-      MarathonAuth.updateModalUI();
+  if (!window.isFirebaseConfigured) {
+    MarathonAuth.updateModalUI();
+    return;
+  }
 
-      if (window.MarathonDB && typeof window.MarathonDB.handleUserChange === 'function') {
-        window.MarathonDB.handleUserChange(user);
-      }
+  let firstCall = true;
 
-      // Only re-render and trigger onboarding/tour if landing is no longer visible
-      if (!window.MarathonLanding || !window.MarathonLanding.isVisible) {
-        if (typeof render === 'function') render();
+  firebase.auth().onAuthStateChanged((user) => {
+    const wasLoggedOut = !MarathonAuth.currentUser;
+    MarathonAuth.currentUser = user;
+    MarathonAuth.updateModalUI();
 
-        if (user && wasLoggedOut) {
-          setTimeout(function() {
-            if (window.MarathonOnboarding && MarathonOnboarding.isIncomplete()) {
-              MarathonOnboarding.maybeShow();
-            } else if (window.MarathonTour && MarathonTour.shouldShow()) {
-              MarathonTour.show();
-            }
-          }, 600);
+    if (window.MarathonDB && typeof window.MarathonDB.handleUserChange === 'function') {
+      window.MarathonDB.handleUserChange(user);
+    }
+
+    // On the very first auth state resolution, let the landing page decide what to show
+    if (firstCall) {
+      firstCall = false;
+      if (window.MarathonLanding) {
+        if (user) {
+          // Authenticated — go straight to app
+          MarathonLanding._launchApp(user);
+        } else {
+          // Not authenticated — show landing
+          MarathonLanding._show();
         }
       }
-    });
-  } else {
-    MarathonAuth.updateModalUI();
-  }
+      return;
+    }
+
+    // Subsequent calls (login/logout events while app is running)
+    if (!window.MarathonLanding || !window.MarathonLanding.isVisible) {
+      if (typeof render === 'function') render();
+
+      if (user && wasLoggedOut) {
+        setTimeout(function() {
+          if (window.MarathonOnboarding && MarathonOnboarding.isIncomplete()) {
+            MarathonOnboarding.maybeShow();
+          } else if (window.MarathonTour && MarathonTour.shouldShow()) {
+            MarathonTour.show();
+          }
+        }, 600);
+      }
+    }
+  });
 };
 
 // Bind to window to allow HTML triggers to hook in
