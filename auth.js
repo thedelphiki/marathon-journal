@@ -201,8 +201,10 @@ MarathonAuth.initObserver = function() {
   }
 
   let firstCall = true;
+  console.log('[AUTH] initObserver() registered');
 
   firebase.auth().onAuthStateChanged((user) => {
+    console.log('[AUTH] onAuthStateChanged fired. firstCall=', firstCall, 'user=', user ? user.email : 'null', 'isVisible=', window.MarathonLanding ? window.MarathonLanding.isVisible : 'NO_LANDING');
     const wasLoggedOut = !MarathonAuth.currentUser;
     MarathonAuth.currentUser = user;
     MarathonAuth.updateModalUI();

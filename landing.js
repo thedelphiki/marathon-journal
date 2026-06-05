@@ -10,11 +10,11 @@ const MarathonLanding = {
 
   // Set true immediately at parse time — before DOMContentLoaded fires on any script.
   // This ensures onboarding/tour guards work even during the async auth check.
-  isVisible: true,
+  isVisible: true, // set at parse time
 
   // Called on DOMContentLoaded — decides whether to show landing or go straight to app
   init: function() {
-    // isVisible is true at module level — blocks onboarding before we're ready.
+    console.log('[LANDING] init() called. isVisible=', this.isVisible);
 
     // If Firebase not configured, skip landing entirely
     if (!window.isFirebaseConfigured) {
@@ -43,6 +43,7 @@ const MarathonLanding = {
   },
 
   _show: function() {
+    console.log('[LANDING] _show() called');
     this.isVisible = true;
     const landing = document.getElementById('landing-page');
     const appEl   = document.getElementById('app');
@@ -52,6 +53,7 @@ const MarathonLanding = {
   },
 
   _hide: function() {
+    console.log('[LANDING] _hide() called');
     this.isVisible = false;
     const landing = document.getElementById('landing-page');
     const appEl   = document.getElementById('app');
@@ -60,6 +62,7 @@ const MarathonLanding = {
   },
 
   _launchApp: function(user) {
+    console.log('[LANDING] _launchApp() called, user=', user ? user.email : 'null');
     this._hide();
     // Pass user to auth system
     if (user && window.MarathonAuth) {
