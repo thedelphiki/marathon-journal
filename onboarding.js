@@ -19,19 +19,16 @@ const MarathonOnboarding = {
   // ── STEP 0: Goal Selection ────────────────────────────────────
   // This is the new entry point — routes to correct plan and fitnessLevel
   maybeShow: function() {
-    console.log('[ONBOARDING] maybeShow called. isVisible=', window.MarathonLanding ? window.MarathonLanding.isVisible : 'NO_LANDING');
     // Never fire while the landing page is gating access
-    if (window.MarathonLanding && window.MarathonLanding.isVisible) { console.log('[ONBOARDING] maybeShow BLOCKED'); return; }
+    if (window.MarathonLanding && window.MarathonLanding.isVisible) return;
     if (this.isIncomplete()) {
       this.showStep0();
     }
   },
 
   showStep0: function() {
-    console.log('[ONBOARDING] showStep0 called. isVisible=', window.MarathonLanding ? window.MarathonLanding.isVisible : 'NO_LANDING');
-    console.trace('[ONBOARDING] showStep0 call stack');
     // Hard guard — never show onboarding while landing page is visible
-    if (window.MarathonLanding && window.MarathonLanding.isVisible) { console.log('[ONBOARDING] BLOCKED by landing guard'); return; }
+    if (window.MarathonLanding && window.MarathonLanding.isVisible) return;
     this._render(`
       <div class="ob-header">
         <div class="ob-logo">🎯</div>

@@ -1,5 +1,4 @@
-// --- FIREBASE CONFIGURATION TEMPLATE ---
-// You will replace these placeholder strings with your actual Firebase Web App keys in a later step.
+// --- FIREBASE CONFIGURATION ---
 
 const firebaseConfig = {
   apiKey: "AIzaSyD-2LVzXPnxiqQ4020epujY-rOE6ePpbDI",
@@ -13,21 +12,29 @@ const firebaseConfig = {
 
 let isFirebaseConfigured = false;
 
-// Safe initialization checker
 try {
   if (firebaseConfig.apiKey && firebaseConfig.apiKey !== "YOUR_API_KEY") {
     firebase.initializeApp(firebaseConfig);
     isFirebaseConfigured = true;
-    console.log("✓ Firebase successfully initialized.");
-  } else {
-    console.warn("⚠ Firebase is in Offline mode. Please fill in your keys in 'firebase-config.js' to enable cloud sync.");
+    console.log("✓ Firebase initialized.");
   }
 } catch (error) {
   console.error("Firebase initialization failed:", error);
 }
+
+// App Check — only activate if the SDK loaded successfully
 if (isFirebaseConfigured) {
-  const appCheck = firebase.appCheck();
-  appCheck.activate('6LdOnQYtAAAAAF1QJWEQv2ZfCuUDnU-S5fof9iJ0', true);
+  try {
+    if (typeof firebase.appCheck === 'function') {
+      const appCheck = firebase.appCheck();
+      appCheck.activate('6LdOnQYtAAAAAF1QJWEQv2ZfCuUDnU-S5fof9iJ0', true);
+      console.log("✓ App Check activated.");
+    } else {
+      console.warn("App Check SDK not loaded — skipping activation.");
+    }
+  } catch (e) {
+    console.warn("App Check activation failed (non-fatal):", e.message);
+  }
 }
-// Make configuration status accessible globally
+
 window.isFirebaseConfigured = isFirebaseConfigured;
