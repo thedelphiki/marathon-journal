@@ -20,7 +20,7 @@ const MarathonOnboarding = {
   // This is the new entry point — routes to correct plan and fitnessLevel
   maybeShow: function() {
     // Never fire while the landing page is gating access
-    if (window.MarathonLanding && window.MarathonLanding.isVisible) return;
+    if (document.body.classList.contains('landing-open')) return;
     if (this.isIncomplete()) {
       this.showStep0();
     }
@@ -28,7 +28,7 @@ const MarathonOnboarding = {
 
   showStep0: function() {
     // Hard guard — never show onboarding while landing page is visible
-    if (window.MarathonLanding && window.MarathonLanding.isVisible) return;
+    if (document.body.classList.contains('landing-open')) return;
     this._render(`
       <div class="ob-header">
         <div class="ob-logo">🎯</div>

@@ -1042,24 +1042,20 @@ function closeGearMenu() {
 
 function handleSignOut() {
   const isGuest = !window.isFirebaseConfigured || !firebase.auth().currentUser;
-  const guestWarning = isGuest
-    ? '\n\n⚠️ You are a guest — signing out will clear all your local progress. Consider exporting a backup first.'
-    : '';
-  if (confirm('Sign out and return to the login screen?' + guestWarning)) {
-    localStorage.removeItem('road2262_profile_v1');
-    localStorage.removeItem('road2262_onboarded_v1');
-    if (window.MarathonLanding) {
-      MarathonLanding.signOut();
-    } else {
-      location.reload();
-    }
+  const warn = isGuest ? '\n\n⚠️ Guest data will be cleared. Export a backup first if needed.' : '';
+  if (!confirm('Sign out and return to the login screen?' + warn)) return;
+  localStorage.removeItem('road2262_profile_v1');
+  localStorage.removeItem('road2262_onboarded_v1');
+  localStorage.setItem('road2262_remember_v1', 'false');
+  if (window.isFirebaseConfigured && firebase.auth().currentUser) {
+    firebase.auth().signOut().then(() => {
+      if (typeof showLanding === 'function') showLanding();
+      else location.reload();
+    });
+  } else {
+    if (typeof showLanding === 'function') showLanding();
+    else location.reload();
   }
-}
-
-function setWeek(w) {
-  STATE.week = w;
-  persist();
-  render();
 }
 
 function setMealDay(i) {
